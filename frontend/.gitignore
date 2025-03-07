@@ -27,4 +27,6 @@ dist-ssr
 *.sw?
 
 # IDE
+.vscode
+.idea
 .prettierrc
