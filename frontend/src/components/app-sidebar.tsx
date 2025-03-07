@@ -9,10 +9,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 import { Calendar, Home, Settings, PersonStanding, MapPin, Frame } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { Link } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Menu mainItems.
 const mainItems = [
@@ -45,10 +48,9 @@ const additionalItems = [
   },
 ];
 
-export function AppSidebar({ setSection }: { setSection: (section: string) => void }) {
-  const handleItemClick = (title: string) => {
-    setSection(title);
-  };
+export function AppSidebar() {
+
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -66,12 +68,11 @@ export function AppSidebar({ setSection }: { setSection: (section: string) => vo
                     <SidebarMenuButton 
                       className='cursor-pointer'
                       asChild
-                      onClick={() => handleItemClick(item.title)}
                     >
-                      <div onClick={(e) => e.preventDefault()}>
+                      <Link to={`/${item.title.toLowerCase()}`}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </div>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -86,14 +87,12 @@ export function AppSidebar({ setSection }: { setSection: (section: string) => vo
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       className='cursor-pointer'
-                      asChild 
-                      isActive={item.title === 'Home'}
-                      onClick={() => handleItemClick(item.title)}
+                      asChild
                     >
-                      <div onClick={(e) => e.preventDefault()}>
+                      <Link to={`/${item.title.toLowerCase()}`}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </div>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -107,6 +106,7 @@ export function AppSidebar({ setSection }: { setSection: (section: string) => vo
           <span>version 0.1</span>
         </SidebarFooter>
       </Sidebar>
+      {isMobile && <SidebarTrigger />}
     </>
   );
 }
