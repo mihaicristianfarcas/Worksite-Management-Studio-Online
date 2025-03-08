@@ -5,7 +5,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
+  // SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -55,9 +55,8 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon" variant="floating">
-        <SidebarHeader>
-          <span className='text-balance gap-0.5 italic font-thin'> Worksite Management Studio 2025</span>
-        </SidebarHeader>
+        {/* <SidebarHeader>Worksite Management Studio
+        </SidebarHeader> */}
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>Main</SidebarGroupLabel>
@@ -100,13 +99,11 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="flex flex-row gap-2 text-xs items-center justify-center font-extralight">
+        <SidebarFooter className="items-center justify-center">
+          {!isMobile && <SidebarTrigger />}
           <ThemeToggle />
-          <span>|</span>
-          <span>version 0.1</span>
         </SidebarFooter>
       </Sidebar>
-      {isMobile && <SidebarTrigger />}
     </>
   );
 }

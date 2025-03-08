@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+// TODO - Replace with real data
 const data: Payment[] = [
   {
     id: "m5gr84i9",
@@ -196,7 +197,7 @@ export function WorkersDataTable() {
   })
 
   return (
-    <div className="w-full p-4">
+    <div className="w-11/12 mx-auto">
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter emails..."
