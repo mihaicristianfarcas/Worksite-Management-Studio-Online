@@ -1,26 +1,25 @@
-import { MapPin, Frame, PersonStanding, Home } from "lucide-react"
+import { MapPin, Frame, PersonStanding, Home } from 'lucide-react'
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Link } from "react-router-dom"
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Link } from 'react-router-dom'
 
 export function LoginForm({
   className,
   ...props
-}: React.ComponentProps<"div">) {
-
+}: React.ComponentProps<'div'>) {
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <form>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-2">
+        <div className='flex flex-col gap-6'>
+          <div className='flex flex-col items-center gap-2'>
             <a
-              href="#"
-              className="flex flex-col items-center gap-2 font-medium"
+              href='#'
+              className='flex flex-col items-center gap-2 font-medium'
             >
-              <div className="flex flex-row gap-4 items-center justify-center rounded-md">
+              <div className='flex flex-row items-center justify-center gap-4 rounded-md'>
                 <MapPin size={24} />
                 <span>//</span>
                 <Frame size={24} />
@@ -29,41 +28,38 @@ export function LoginForm({
                 <span>//</span>
                 <Home size={24} />
               </div>
-              <span className="sr-only">Worksite Management</span>
+              <span className='sr-only'>Worksite Management</span>
             </a>
-            <h1 className="text-l font-bold my-1.5">Welcome to Worksite Management Studio</h1>
-            <div className="text-center text-xs text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <a href="#" className="underline underline-offset-4">
+            <h1 className='text-l my-1.5 font-bold'>
+              Welcome to Worksite Management Studio
+            </h1>
+            <div className='text-muted-foreground text-center text-xs'>
+              Don&apos;t have an account?{' '}
+              <a href='#' className='underline underline-offset-4'>
                 Sign up
               </a>
             </div>
           </div>
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-3">
-              <Label htmlFor="email">Email</Label>
+          <div className='flex flex-col gap-6'>
+            <div className='grid gap-3'>
+              <Label htmlFor='email'>Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
+                id='email'
+                type='email'
+                placeholder='m@example.com'
                 required
               />
             </div>
-             <div className="grid gap-3">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder=""
-                required
-              />
+            <div className='grid gap-3'>
+              <Label htmlFor='password'>Password</Label>
+              <Input id='password' type='password' placeholder='' required />
             </div>
-            <Link to="/home">
-              <Button type="submit" className="w-full">
+            <Link to='/home'>
+              <Button type='submit' className='w-full'>
                 Login
               </Button>
             </Link>
-          {/* </div>
+            {/* </div>
           <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
             <span className="bg-background text-muted-foreground relative z-10 px-2">
               Or
@@ -88,12 +84,12 @@ export function LoginForm({
               </svg>
               Continue with Google
             </Button> */}
-          </div> 
-        </div> 
+          </div>
+        </div>
       </form>
-      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+      <div className='text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs'>
+        By clicking continue, you agree to our <a href='#'>Terms of Service</a>{' '}
+        and <a href='#'>Privacy Policy</a>.
       </div>
     </div>
   )

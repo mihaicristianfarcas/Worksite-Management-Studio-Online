@@ -13,11 +13,11 @@
 // // Get the dynamically loaded component for the requested section
 // export function GetActivePage({ section }: { section: string }) {
 //   const importPage = pageMapping[section];
-  
+
 //   if (!importPage) {
 //     console.error(`No page found for section: ${section}`);
 //   }
-  
+
 //   try {
 //     return <importPage />;
 //   } catch (error) {
@@ -28,6 +28,6 @@
 // // Component to render the appropriate page with suspense
 // export default function LoadPage({ section }: { section: string }): ReactElement {
 //   const PageComponent = GetActivePage({ section });
-  
+
 //   return <PageComponent/>
 // }
