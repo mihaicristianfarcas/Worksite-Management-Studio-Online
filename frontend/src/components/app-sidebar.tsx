@@ -99,7 +99,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className='items-center justify-center'>
+        <SidebarFooter className='fixed bottom-2 left-[0.43rem] items-center justify-center'>
           {!isMobile && <SidebarTrigger />}
           <ThemeToggle />
         </SidebarFooter>
