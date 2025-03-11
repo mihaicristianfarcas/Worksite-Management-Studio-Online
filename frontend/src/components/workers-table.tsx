@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import {
   ColumnDef,
@@ -37,47 +35,54 @@ import {
 } from '@/components/ui/table'
 
 // TODO - Replace with real data
-const data: Payment[] = [
+const data: Worker[] = [
   {
     id: 'm5gr84i9',
-    amount: 316,
-    status: 'success',
-    email: 'ken99@example.com'
+    name: 'Dorel',
+    age: 34,
+    position: 'Dulgher',
+    salary: 2000
   },
   {
-    id: '3u1reuv4',
-    amount: 242,
-    status: 'success',
-    email: 'Abe45@example.com'
+    id: 'fafwe9f9',
+    name: 'Sica',
+    age: 17,
+    position: 'Cu roaba',
+    salary: 1000
   },
   {
-    id: 'derv1ws0',
-    amount: 837,
-    status: 'processing',
-    email: 'Monserrat44@example.com'
+    id: 'egei4i9k',
+    name: 'Mirel',
+    age: 23,
+    position: 'Pe buldo',
+    salary: 3000
   },
   {
-    id: '5kma53ae',
-    amount: 874,
-    status: 'success',
-    email: 'Silas22@example.com'
+    id: 'aegk569b',
+    name: 'Marcel',
+    age: 55,
+    position: 'Pavator',
+    salary: 1500
   },
   {
-    id: 'bhqecj4p',
-    amount: 721,
-    status: 'failed',
-    email: 'carmella@example.com'
+    id: 'favke9fo',
+    name: 'Ursu',
+    age: 46,
+    position: 'Fierar',
+    salary: 2500
   }
 ]
 
-export type Payment = {
+// TODO replace with backend entity model
+export type Worker = {
   id: string
-  amount: number
-  status: 'pending' | 'processing' | 'success' | 'failed'
-  email: string
+  name: string
+  age: number
+  position: string
+  salary: number
 }
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<Worker>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -101,37 +106,73 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => (
-      <div className='capitalize'>{row.getValue('status')}</div>
-    )
-  },
-  {
-    accessorKey: 'email',
+    accessorKey: 'name',
     header: ({ column }) => {
       return (
         <Button
           variant='ghost'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Email
-          <ArrowUpDown />
+          Name
+          <ArrowUpDown className='ml-2 h-4 w-4' />
         </Button>
       )
     },
-    cell: ({ row }) => <div className='lowercase'>{row.getValue('email')}</div>
+    cell: ({ row }) => <div className='capitalize'>{row.getValue('name')}</div>
   },
   {
-    accessorKey: 'amount',
-    header: () => <div className='text-right'>Amount</div>,
+    accessorKey: 'age',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Age
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      )
+    },
+    cell: ({ row }) => <div className='lowercase'>{row.getValue('age')}</div>
+  },
+  {
+    accessorKey: 'position',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Position
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      )
+    },
+    cell: ({ row }) => (
+      <div className='capitalize'>{row.getValue('position')}</div>
+    )
+  },
+  {
+    accessorKey: 'salary',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='w-full text-right'
+        >
+          Salary
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      )
+    },
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue('amount'))
+      const amount = parseFloat(row.getValue('salary'))
 
-      // Format the amount as a dollar amount
+      // Format the amount as a RON amount
       const formatted = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'RON'
       }).format(amount)
 
       return <div className='text-right font-medium'>{formatted}</div>
@@ -156,11 +197,11 @@ export const columns: ColumnDef<Payment>[] = [
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(payment.id)}
             >
-              Copy payment ID
+              Copy worker ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
+            <DropdownMenuItem>View worker stats</DropdownMenuItem>
+            <DropdownMenuItem>View other details</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -197,13 +238,13 @@ export function WorkersDataTable() {
   })
 
   return (
-    <div className='mx-auto w-11/12'>
+    <>
       <div className='flex items-center py-4'>
         <Input
-          placeholder='Filter emails...'
-          value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
+          placeholder='Filter workers...'
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={event =>
-            table.getColumn('email')?.setFilterValue(event.target.value)
+            table.getColumn('name')?.setFilterValue(event.target.value)
           }
           className='max-w-sm'
         />
@@ -306,6 +347,6 @@ export function WorkersDataTable() {
           </Button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

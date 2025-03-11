@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { AppSidebar } from './app-sidebar'
 import PageTitle from './page-title'
 import { SidebarInset, SidebarTrigger } from './ui/sidebar'
@@ -5,10 +6,12 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 export default function PageWrapper({
   pageTitle,
-  children
+  children,
+  className
 }: {
   pageTitle: string
   children: React.ReactNode
+  className?: React.ComponentProps<'div'>['className']
 }) {
   const isMobile = useIsMobile()
 
@@ -20,8 +23,7 @@ export default function PageWrapper({
           {isMobile && <SidebarTrigger />}
           <PageTitle title={pageTitle} />
         </div>
-
-        {children}
+        <div className={cn(className)}>{children}</div>
       </SidebarInset>
     </>
   )
