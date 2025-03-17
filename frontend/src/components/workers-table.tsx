@@ -33,6 +33,8 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import AddWorkerForm from './add-worker-form'
+import { Plus } from 'lucide-react'
 
 // TODO - Replace with real data
 const data: Worker[] = [
@@ -201,7 +203,7 @@ export const columns: ColumnDef<Worker>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>View worker stats</DropdownMenuItem>
-            <DropdownMenuItem>View other details</DropdownMenuItem>
+            <DropdownMenuItem>Delete worker</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -218,8 +220,27 @@ export function WorkersDataTable() {
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
+  // Add workers from the table
+  const [functionality, setFunctionality] = React.useState('')
+
+  // Change the data constant to a state
+  const [workers, setWorkers] = React.useState<Worker[]>(data)
+
+  // Add function to handle adding new worker
+  const handleAddWorker = (worker: Worker) => {
+    setWorkers(prev => [...prev, worker])
+  }
+
+  // Add function to handle deleting selected workers
+  const handleDeleteWorkers = () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedIds = selectedRows.map(row => row.original.id)
+    setWorkers(prev => prev.filter(worker => !selectedIds.includes(worker.id)))
+    setRowSelection({}) // Clear selection after delete
+  }
+
   const table = useReactTable({
-    data,
+    data: workers,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -241,13 +262,36 @@ export function WorkersDataTable() {
     <>
       <div className='flex items-center py-4'>
         <Input
-          placeholder='Filter workers...'
+          placeholder='Search workers...'
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={event =>
             table.getColumn('name')?.setFilterValue(event.target.value)
           }
           className='max-w-sm'
         />
+
+        {/* Add workers button */}
+        <Button
+          className='ml-3'
+          variant={functionality === 'add' ? 'default' : 'outline'}
+          onClick={() =>
+            setFunctionality(() => (functionality === 'add' ? '' : 'add'))
+          }
+        >
+          <Plus />
+        </Button>
+
+        {/* Delete workers button - show when rows are selected */}
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <Button
+            className='ml-3'
+            variant='destructive'
+            onClick={handleDeleteWorkers}
+          >
+            Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
+          </Button>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant='outline' className='ml-auto'>
@@ -347,6 +391,14 @@ export function WorkersDataTable() {
           </Button>
         </div>
       </div>
+
+      <section>
+        <div className='flex flex-col'>
+          {functionality === 'add' && (
+            <AddWorkerForm onAddWorker={handleAddWorker} />
+          )}
+        </div>
+      </section>
     </>
   )
 }
