@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from './ui/button'
+import { Worker } from '@/components/workers-table'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
@@ -29,7 +30,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
     // Generate a random ID for the new worker
-    const newWorker = {
+    const newWorker: Worker = {
       ...data,
       id: Math.random().toString(36).substr(2, 9)
     }
@@ -48,23 +49,6 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
         noValidate
       >
         <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-          {/* ID */}
-          <div>
-            <Input
-              id='id'
-              type='text'
-              placeholder='ID'
-              autoComplete='id'
-              {...register('id')}
-            />
-
-            {errors.id?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.id.message}
-              </p>
-            )}
-          </div>
-
           {/* Name */}
           <div>
             <Input
@@ -132,12 +116,11 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
               </p>
             )}
           </div>
-
-          {/* Submit */}
-          <Button type='submit' disabled={isSubmitting}>
-            {isSubmitting ? 'Adding...' : 'Add Worker'}
-          </Button>
         </div>
+        {/* Submit */}
+        <Button className='mt-4 w-full' type='submit' disabled={isSubmitting}>
+          {isSubmitting ? 'Adding...' : 'Proceed'}
+        </Button>
       </form>
     </section>
   )

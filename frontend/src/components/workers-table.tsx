@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,9 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -34,7 +31,6 @@ import {
   TableRow
 } from '@/components/ui/table'
 import AddWorkerForm from './add-worker-form'
-import { Plus } from 'lucide-react'
 
 // TODO - Replace with real data
 const data: Worker[] = [
@@ -88,21 +84,25 @@ export const columns: ColumnDef<Worker>[] = [
   {
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-      />
+      <div className='flex justify-center'>
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+          aria-label='Select all'
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={value => row.toggleSelected(!!value)}
-        aria-label='Select row'
-      />
+      <div className='flex justify-center'>
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={value => row.toggleSelected(!!value)}
+          aria-label='Select row'
+        />
+      </div>
     ),
     enableSorting: false,
     enableHiding: false
@@ -114,13 +114,16 @@ export const columns: ColumnDef<Worker>[] = [
         <Button
           variant='ghost'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='w-full justify-center px-4'
         >
           Name
           <ArrowUpDown className='ml-2 h-4 w-4' />
         </Button>
       )
     },
-    cell: ({ row }) => <div className='capitalize'>{row.getValue('name')}</div>
+    cell: ({ row }) => (
+      <div className='px-4 capitalize'>{row.getValue('name')}</div>
+    )
   },
   {
     accessorKey: 'age',
@@ -129,13 +132,14 @@ export const columns: ColumnDef<Worker>[] = [
         <Button
           variant='ghost'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='w-full justify-center px-4'
         >
           Age
           <ArrowUpDown className='ml-2 h-4 w-4' />
         </Button>
       )
     },
-    cell: ({ row }) => <div className='lowercase'>{row.getValue('age')}</div>
+    cell: ({ row }) => <div className='px-4'>{row.getValue('age')}</div>
   },
   {
     accessorKey: 'position',
@@ -144,6 +148,7 @@ export const columns: ColumnDef<Worker>[] = [
         <Button
           variant='ghost'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='w-full justify-center px-4'
         >
           Position
           <ArrowUpDown className='ml-2 h-4 w-4' />
@@ -151,7 +156,7 @@ export const columns: ColumnDef<Worker>[] = [
       )
     },
     cell: ({ row }) => (
-      <div className='capitalize'>{row.getValue('position')}</div>
+      <div className='px-4 capitalize'>{row.getValue('position')}</div>
     )
   },
   {
@@ -161,7 +166,7 @@ export const columns: ColumnDef<Worker>[] = [
         <Button
           variant='ghost'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className='w-full text-right'
+          className='w-full justify-center px-4'
         >
           Salary
           <ArrowUpDown className='ml-2 h-4 w-4' />
@@ -177,36 +182,7 @@ export const columns: ColumnDef<Worker>[] = [
         currency: 'RON'
       }).format(amount)
 
-      return <div className='text-right font-medium'>{formatted}</div>
-    }
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='ghost' className='h-8 w-8 p-0'>
-              <span className='sr-only'>Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy worker ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View worker stats</DropdownMenuItem>
-            <DropdownMenuItem>Delete worker</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+      return <div className='px-4 font-medium'>{formatted}</div>
     }
   }
 ]
@@ -223,7 +199,6 @@ export function WorkersDataTable() {
   // Add workers from the table
   const [functionality, setFunctionality] = React.useState('')
 
-  // Change the data constant to a state
   const [workers, setWorkers] = React.useState<Worker[]>(data)
 
   // Add function to handle adding new worker
@@ -278,7 +253,8 @@ export function WorkersDataTable() {
             setFunctionality(() => (functionality === 'add' ? '' : 'add'))
           }
         >
-          <Plus />
+          <Plus className='mr-2 h-4 w-4' />
+          Add Worker
         </Button>
 
         {/* Delete workers button - show when rows are selected */}
@@ -295,7 +271,7 @@ export function WorkersDataTable() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant='outline' className='ml-auto'>
-              Columns <ChevronDown />
+              Columns <ChevronDown className='ml-2 h-4 w-4' />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end'>
@@ -324,7 +300,7 @@ export function WorkersDataTable() {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className='py-1.5'>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -342,10 +318,11 @@ export function WorkersDataTable() {
               table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
+                  // data-state={row.getIsSelected() && 'selected'}
+                  className='hover:bg-muted/30'
                 >
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className='py-3 text-center'>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -393,11 +370,9 @@ export function WorkersDataTable() {
       </div>
 
       <section>
-        <div className='flex flex-col'>
-          {functionality === 'add' && (
-            <AddWorkerForm onAddWorker={handleAddWorker} />
-          )}
-        </div>
+        {functionality === 'add' && (
+          <AddWorkerForm onAddWorker={handleAddWorker} />
+        )}
       </section>
     </>
   )
