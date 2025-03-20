@@ -34,25 +34,20 @@ export default function EditWorkerForm({
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    // Generate a random ID for the new worker
-    const newWorker: Worker = {
-      ...data,
-      id: Math.random().toString(36).substr(2, 9)
+    const newWorker = {
+      id: worker.id,
+      ...data
     }
 
     onEditWorker(newWorker)
-    toast.success('Worker added successfully!')
+    toast.success('Worker edited successfully!')
     reset()
   }
 
   // TODO add worker
   return (
     <section className='relative isolate'>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className='mt-4 lg:flex-auto'
-        noValidate
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className='mt-4 lg:flex-auto' noValidate>
         <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
           {/* Name */}
           <div>
@@ -65,9 +60,7 @@ export default function EditWorkerForm({
             />
 
             {errors.name?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.name.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.name.message}</p>
             )}
           </div>
 
@@ -82,9 +75,7 @@ export default function EditWorkerForm({
             />
 
             {errors.age?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.age.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.age.message}</p>
             )}
           </div>
 
@@ -99,9 +90,7 @@ export default function EditWorkerForm({
             />
 
             {errors.salary?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.salary.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.salary.message}</p>
             )}
           </div>
 
@@ -116,9 +105,7 @@ export default function EditWorkerForm({
             />
 
             {errors.position?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.position.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.position.message}</p>
             )}
           </div>
         </div>
