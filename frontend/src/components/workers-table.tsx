@@ -34,6 +34,14 @@ import {
   TableRow
 } from '@/components/ui/table'
 import AddWorkerForm from './add-worker-form'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from './ui/dialog'
 
 // TODO - Replace with real data
 const data: Worker[] = [
@@ -71,8 +79,54 @@ const data: Worker[] = [
     age: 46,
     position: 'Fierar',
     salary: 2500
+  },
+  {
+    id: 'f3rqf9qu',
+    name: 'Ion',
+    age: 30,
+    position: 'Zidar',
+    salary: 1800
+  },
+  {
+    id: '081u2r8f',
+    name: 'Gheorghe',
+    age: 40,
+    position: 'Zugrav',
+    salary: 2200
+  },
+  {
+    id: 'f9qf9qf9',
+    name: 'Mihai',
+    age: 28,
+    position: 'Electrician',
+    salary: 2800
+  },
+  {
+    id: 'f9qf9qf9',
+    name: 'Vasile',
+    age: 37,
+    position: 'Instalator',
+    salary: 1900
+  },
+  {
+    id: 'f9qf9qf9',
+    name: 'Costel',
+    age: 42,
+    position: 'Faiantar',
+    salary: 2400
+  },
+  {
+    id: 'f9qf9qf9',
+    name: 'Florin',
+    age: 49,
+    position: 'Sudor',
+    salary: 2600
   }
 ]
+
+export function EditWorker(worker: Worker) {
+  return alert(`Edit worker: ${worker.name}`)
+}
 
 // TODO replace with backend entity model
 export type Worker = {
@@ -83,7 +137,7 @@ export type Worker = {
   salary: number
 }
 
-export const columns: ColumnDef<Worker>[] = [
+const columns: ColumnDef<Worker>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -210,7 +264,9 @@ export const columns: ColumnDef<Worker>[] = [
               Copy worker ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => EditWorker(worker)}>
+              Edit
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -227,9 +283,7 @@ export function WorkersDataTable() {
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
-  // Add workers from the table
-  const [functionality, setFunctionality] = React.useState('')
-
+  // Use state to store/show workers
   const [workers, setWorkers] = React.useState<Worker[]>(data)
 
   // Add function to handle adding new worker
@@ -276,17 +330,24 @@ export function WorkersDataTable() {
           className='max-w-sm'
         />
 
-        {/* Add workers button */}
-        <Button
-          className='ml-3'
-          variant={functionality === 'add' ? 'default' : 'outline'}
-          onClick={() =>
-            setFunctionality(() => (functionality === 'add' ? '' : 'add'))
-          }
-        >
-          <Plus className='mr-2 h-4 w-4' />
-          Add Worker
-        </Button>
+        {/* Add workers dialog */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className='ml-3' variant='ghost'>
+              <Plus className='mr-2 h-4 w-4' />
+              Add Worker
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add a worker</DialogTitle>
+              <DialogDescription>
+                Add a worker to the database.
+              </DialogDescription>
+            </DialogHeader>
+            <AddWorkerForm onAddWorker={handleAddWorker} />
+          </DialogContent>
+        </Dialog>
 
         {/* Delete workers button - show when rows are selected */}
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
@@ -396,11 +457,11 @@ export function WorkersDataTable() {
         </div>
       </div>
 
-      <section>
+      {/* <section>
         {functionality === 'add' && (
           <AddWorkerForm onAddWorker={handleAddWorker} />
         )}
-      </section>
+      </section> */}
     </>
   )
 }
