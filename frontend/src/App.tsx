@@ -14,12 +14,14 @@ import Workers from './pages/Workers'
 import Worksites from './pages/Worksites'
 import { AppSidebar } from './components/app-sidebar'
 import { useIsMobile } from './hooks/use-mobile'
+import { Toaster } from 'sonner'
 
 function App() {
   const isMobile = useIsMobile()
 
   return (
     <ThemeProvider defaultTheme='system' storageKey='vite-ui-theme'>
+      <Toaster />
       <Routes>
         {/* Login route outside of SidebarProvider */}
         <Route path='/' element={<Login />} />
