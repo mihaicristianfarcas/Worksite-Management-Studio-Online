@@ -22,7 +22,6 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   } = useForm<WorkerFormInputs>({
     resolver: zodResolver(WorkerSchema),
     defaultValues: {
-      id: '',
       name: '',
       position: ''
     }

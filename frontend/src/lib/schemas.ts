@@ -7,7 +7,6 @@ import { z } from 'zod'
 // salary: 1000
 
 export const WorkerSchema = z.object({
-  id: z.string().min(1, { message: 'ID is required.' }),
   name: z
     .string()
     .min(1, { message: 'Name is required.' })
