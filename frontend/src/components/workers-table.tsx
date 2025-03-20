@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, Plus } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,6 +19,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -184,6 +187,34 @@ export const columns: ColumnDef<Worker>[] = [
 
       return <div className='px-4 font-medium'>{formatted}</div>
     }
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: ({ row }) => {
+      const worker = row.original as Worker
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant='ghost' className='h-8 w-8 p-0'>
+              <span className='sr-only'>Open menu</span>
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end'>
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(worker.id)}
+            >
+              Copy worker ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
   }
 ]
 
@@ -316,11 +347,7 @@ export function WorkersDataTable() {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
-                <TableRow
-                  key={row.id}
-                  // data-state={row.getIsSelected() && 'selected'}
-                  className='hover:bg-muted/30'
-                >
+                <TableRow key={row.id} className='hover:bg-muted/30'>
                   {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id} className='py-3 text-center'>
                       {flexRender(
