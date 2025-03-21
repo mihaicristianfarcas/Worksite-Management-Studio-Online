@@ -1,5 +1,6 @@
 import PageTitle from '@/components/page-title'
-import { WorkersDataTable } from '@/components/workers-data-table'
+import { WorkersAgeBarChart } from '@/components/workers-age-bar-chart'
+import { WorkersSalaryPieChart } from '@/components/workers-salary-pie-chart'
 import { useEffect, useState } from 'react'
 
 export default function Home() {
@@ -12,8 +13,13 @@ export default function Home() {
 
   return (
     <>
-      <PageTitle title='Welcome back, User' />
-      <WorkersDataTable />
+      <PageTitle title='Welcome back, Chieftan!' />
+      <section className='grid grid-cols-2 gap-4 lg:grid-cols-3'>
+        <WorkersSalaryPieChart />
+        <WorkersAgeBarChart />
+        <WorkersAgeBarChart />
+      </section>
+      <h1 className='text-2xl font-bold'>Hello from the backend:</h1>
       <p>{message}</p>
     </>
   )
