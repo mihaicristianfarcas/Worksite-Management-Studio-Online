@@ -1,3 +1,5 @@
+import PageTitle from '@/components/page-title'
+import { WorkersDataTable } from '@/components/workers-data-table'
 import { useEffect, useState } from 'react'
 
 export default function Home() {
@@ -9,9 +11,10 @@ export default function Home() {
   }, [])
 
   return (
-    <div className='flex h-full flex-col items-center justify-center space-y-4'>
-      <h1>Work in progress...</h1>
-      <p className='mt-4 text-lg'>{message || 'Loading...'} from backend</p>
-    </div>
+    <>
+      <PageTitle title='Welcome back, User' />
+      <WorkersDataTable />
+      <p>{message}</p>
+    </>
   )
 }

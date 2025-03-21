@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from './ui/button'
-import { Worker } from '@/components/workers-table'
+import { Worker } from '@/data/model'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 

@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from './ui/button'
-import { Worker } from '@/components/workers-table'
+import { Worker } from '@/data/model'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
@@ -42,11 +42,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   // TODO add worker
   return (
     <section className='relative isolate'>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className='mt-4 lg:flex-auto'
-        noValidate
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className='mt-4 lg:flex-auto' noValidate>
         <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
           {/* Name */}
           <div>
@@ -59,9 +55,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
             />
 
             {errors.name?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.name.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.name.message}</p>
             )}
           </div>
 
@@ -76,9 +70,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
             />
 
             {errors.age?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.age.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.age.message}</p>
             )}
           </div>
 
@@ -93,9 +85,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
             />
 
             {errors.salary?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.salary.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.salary.message}</p>
             )}
           </div>
 
@@ -110,9 +100,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
             />
 
             {errors.position?.message && (
-              <p className='ml-1 mt-2 text-sm text-rose-400'>
-                {errors.position.message}
-              </p>
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.position.message}</p>
             )}
           </div>
         </div>
