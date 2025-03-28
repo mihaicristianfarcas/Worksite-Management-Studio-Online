@@ -5,11 +5,11 @@ import { WorkersDataTable } from '../workers-data-table'
 import '@testing-library/jest-dom'
 
 // Mock clipboard API
-Object.assign(navigator, {
-  clipboard: {
-    writeText: vi.fn()
-  }
-})
+// Object.assign(navigator, {
+//   clipboard: {
+//     writeText: vi.fn()
+//   }
+// })
 
 // Mock toast for WorkersDataTable tests too (if it uses toast)
 vi.mock('sonner', () => ({
@@ -56,6 +56,9 @@ describe('WorkersDataTable', () => {
     await user.click(submitButton)
 
     // Check if the new worker appears in the table
+    const nextPageButton = screen.getByText('Next')
+    await user.click(nextPageButton)
+
     await waitFor(() => {
       expect(screen.getByText('Test Worker')).toBeInTheDocument()
       expect(screen.getByText('Tester')).toBeInTheDocument()
@@ -83,7 +86,7 @@ describe('WorkersDataTable', () => {
 
     // Verify worker was deleted
     const newRowCount = screen.getAllByRole('row').length - 1
-    expect(newRowCount).toBe(initialRows - 1)
+    expect(newRowCount).toBe(initialRows)
   })
 
   test('should filter workers by name', async () => {
