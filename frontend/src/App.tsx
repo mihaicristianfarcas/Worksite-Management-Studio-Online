@@ -1,12 +1,8 @@
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Routes, Route } from 'react-router-dom'
-import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeProvider } from '@/components/providers/theme-provider'
 import Settings from './pages/Settings'
-import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Calendar from './pages/Calendar'
 import Projects from './pages/Projects'
@@ -36,7 +32,7 @@ function App() {
                 {isMobile && <SidebarTrigger />}
                 <div className='mx-auto w-[calc(100%-4rem)]'>
                   <Routes>
-                    <Route path='/home' element={<Home />} />
+                    <Route path='//dashboard' element={<Dashboard />} />
                     <Route path='/calendar' element={<Calendar />} />
                     <Route path='/projects' element={<Projects />} />
                     <Route path='/settings' element={<Settings />} />

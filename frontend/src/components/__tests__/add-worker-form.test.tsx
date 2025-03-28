@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
-import AddWorkerForm from '../add-worker-form'
+import AddWorkerForm from '../workers/add-form'
 // import { Worker } from '@/components/workers-table'
 import '@testing-library/jest-dom'
 

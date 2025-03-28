@@ -57,42 +57,42 @@ export const data: Worker[] = [
     salary: 2800
   },
   {
-    id: 'f9qf9qf9',
+    id: 'jbnpis3r',
     name: 'Vasile',
     age: 37,
     position: 'Instalator',
     salary: 1900
   },
   {
-    id: 'f9qf9qf9',
+    id: 'sbrgw4gq',
     name: 'Costel',
     age: 42,
     position: 'Faiantar',
     salary: 2400
   },
   {
-    id: 'f9qf9qf9',
+    id: 'brg4wgwq',
     name: 'Florin',
     age: 49,
     position: 'Sudor',
     salary: 2600
   },
   {
-    id: 'f9qf9qf9',
+    id: 'gdgewg32',
     name: 'Marius',
     age: 32,
     position: 'Vopsitor',
     salary: 2100
   },
   {
-    id: 'f9qf9qf9',
+    id: 't3geg33r',
     name: 'Adrian',
     age: 38,
     position: 'Tencuitor',
     salary: 2700
   },
   {
-    id: 'f9qf9qf9',
+    id: '352t3twe',
     name: 'Cristian',
     age: 27,
     position: 'Sapator',

@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import AddWorkerForm from '@/components/add-worker-form'
+import AddWorkerForm from '@/components/workers/add-form'
 import {
   Dialog,
   DialogContent,
@@ -40,8 +40,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from './ui/dialog'
-import EditWorkerForm from '@/components/edit-worker-form'
+} from '../ui/dialog'
+import EditWorkerForm from '@/components/workers/edit-form'
 import { data } from '@/data/model'
 import { Worker } from '@/data/model'
 

@@ -12,23 +12,16 @@ import {
   SidebarTrigger
 } from '@/components/ui/sidebar'
 
-import {
-  Calendar,
-  Home,
-  Settings,
-  PersonStanding,
-  MapPin,
-  Frame
-} from 'lucide-react'
+import { Calendar, Settings, PersonStanding, MapPin, Frame, LayoutDashboard } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 // Menu mainItems.
-const mainItems = [
+const mainPages = [
   {
-    title: 'Home',
-    icon: Home
+    title: 'Dashboard',
+    icon: LayoutDashboard
   },
   {
     title: 'Workers',
@@ -44,7 +37,7 @@ const mainItems = [
   }
 ]
 
-const additionalItems = [
+const additionalPages = [
   {
     title: 'Calendar',
     icon: Calendar
@@ -68,7 +61,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>Main</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {mainItems.map(item => (
+                {mainPages.map(item => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton className='cursor-pointer' asChild>
                       <Link to={`/${item.title.toLowerCase()}`}>
@@ -85,7 +78,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>Resources</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {additionalItems.map(item => (
+                {additionalPages.map(item => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton className='cursor-pointer' asChild>
                       <Link to={`/${item.title.toLowerCase()}`}>
