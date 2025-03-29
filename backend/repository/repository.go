@@ -18,7 +18,18 @@ func NewRepository() *Repository {
 		workers: []model.Worker{
 			{ID: "m5gr84i9", Name: "Dorel", Age: 34, Position: "Dulgher", Salary: 2000},
 			{ID: "fafwe9f9", Name: "Sica", Age: 17, Position: "Cu roaba", Salary: 1000},
-			// Add all your other workers here
+			{ID: "egei4i9k", Name: "Mirel", Age: 23, Position: "Pe buldo", Salary: 3000},
+			{ID: "aegk569b", Name: "Marcel", Age: 55, Position: "Pavator", Salary: 1500},
+			{ID: "favke9fo", Name: "Ursu", Age: 46, Position: "Fierar", Salary: 2500},
+			{ID: "f3rqf9qu", Name: "Ion", Age: 30, Position: "Zidar", Salary: 1800},
+			{ID: "081u2r8f", Name: "Gheorghe", Age: 40, Position: "Zugrav", Salary: 2200},
+			{ID: "f9qf9qf9", Name: "Mihai", Age: 28, Position: "Electrician", Salary: 2800},
+			{ID: "jbnpis3r", Name: "Vasile", Age: 37, Position: "Instalator", Salary: 1900},
+			{ID: "sbrgw4gq", Name: "Costel", Age: 42, Position: "Faiantar", Salary: 2400},
+			{ID: "brg4wgwq", Name: "Florin", Age: 49, Position: "Sudor", Salary: 2600},
+			{ID: "gdgewg32", Name: "Marius", Age: 32, Position: "Vopsitor", Salary: 2100},
+			{ID: "t3geg33r", Name: "Adrian", Age: 38, Position: "Tencuitor", Salary: 2700},
+			{ID: "352t3twe", Name: "Cristian", Age: 27, Position: "Sapator", Salary: 2300},
 		},
 	}
 }
