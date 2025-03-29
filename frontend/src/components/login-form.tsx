@@ -6,19 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Link } from 'react-router-dom'
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <form>
         <div className='flex flex-col gap-6'>
           <div className='flex flex-col items-center gap-2'>
-            <a
-              href='#'
-              className='flex flex-col items-center gap-2 font-medium'
-            >
+            <a href='#' className='flex flex-col items-center gap-2 font-medium'>
               <div className='flex flex-row items-center justify-center gap-4 rounded-md'>
                 <MapPin size={24} />
                 <span>//</span>
@@ -30,9 +24,7 @@ export function LoginForm({
               </div>
               <span className='sr-only'>Worksite Management</span>
             </a>
-            <h1 className='text-l my-1.5 font-bold'>
-              Welcome to Worksite Management Studio
-            </h1>
+            <h1 className='text-l my-1.5 font-bold'>Welcome to Worksite Management Studio</h1>
             <div className='text-muted-foreground text-center text-xs'>
               Don&apos;t have an account?{' '}
               <a href='#' className='underline underline-offset-4'>
@@ -43,18 +35,13 @@ export function LoginForm({
           <div className='flex flex-col gap-6'>
             <div className='grid gap-3'>
               <Label htmlFor='email'>Email</Label>
-              <Input
-                id='email'
-                type='email'
-                placeholder='m@example.com'
-                required
-              />
+              <Input id='email' type='email' placeholder='m@example.com' required />
             </div>
             <div className='grid gap-3'>
               <Label htmlFor='password'>Password</Label>
               <Input id='password' type='password' placeholder='' required />
             </div>
-            <Link to='/home'>
+            <Link to='/dashboard'>
               <Button type='submit' className='w-full'>
                 Login
               </Button>
@@ -88,8 +75,8 @@ export function LoginForm({
         </div>
       </form>
       <div className='text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs'>
-        By clicking continue, you agree to our <a href='#'>Terms of Service</a>{' '}
-        and <a href='#'>Privacy Policy</a>.
+        By clicking continue, you agree to our <a href='#'>Terms of Service</a> and{' '}
+        <a href='#'>Privacy Policy</a>.
       </div>
     </div>
   )
