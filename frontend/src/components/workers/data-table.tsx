@@ -1,6 +1,5 @@
 import * as React from 'react'
 import {
-  ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
@@ -11,16 +10,12 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
+import { ChevronDown, Plus, RefreshCcwDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -40,297 +35,79 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from '../ui/dialog'
+} from '@/components/ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
-import { Worker } from '@/data/model'
-import { toast } from 'sonner'
-
-// API base URL - make sure this matches your backend
-const API_URL = 'http://localhost:8080/api'
+import { Worker } from '@/api/workers'
+import { getWorkerColumns } from './columns'
+import { useWorkersStore } from '@/store/workers'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 export function WorkersDataTable() {
-  const columns: ColumnDef<Worker>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <div className='flex justify-center'>
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-            aria-label='Select all'
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className='flex justify-center'>
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={value => row.toggleSelected(!!value)}
-            aria-label='Select row'
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false
-    },
-    {
-      accessorKey: 'name',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant='ghost'
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className='w-full justify-center px-4'
-          >
-            Name
-            <ArrowUpDown className='ml-2 h-4 w-4' />
-          </Button>
-        )
-      },
-      cell: ({ row }) => <div className='px-4 capitalize'>{row.getValue('name')}</div>
-    },
-    {
-      accessorKey: 'age',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant='ghost'
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className='w-full justify-center px-4'
-          >
-            Age
-            <ArrowUpDown className='ml-2 h-4 w-4' />
-          </Button>
-        )
-      },
-      cell: ({ row }) => <div className='px-4'>{row.getValue('age')}</div>
-    },
-    {
-      accessorKey: 'position',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant='ghost'
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className='w-full justify-center px-4'
-          >
-            Position
-            <ArrowUpDown className='ml-2 h-4 w-4' />
-          </Button>
-        )
-      },
-      cell: ({ row }) => <div className='px-4 capitalize'>{row.getValue('position')}</div>
-    },
-    {
-      accessorKey: 'salary',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant='ghost'
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className='w-full justify-center px-4'
-          >
-            Salary
-            <ArrowUpDown className='ml-2 h-4 w-4' />
-          </Button>
-        )
-      },
-      cell: ({ row }) => {
-        const amount = parseFloat(row.getValue('salary'))
-
-        // Format the amount as a RON amount
-        const formatted = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'RON'
-        }).format(amount)
-
-        return <div className='px-4 font-medium'>{formatted}</div>
-      }
-    },
-    {
-      id: 'actions',
-      enableHiding: false,
-      cell: ({ row }) => {
-        const worker = row.original as Worker
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant='ghost' className='h-8 w-8 p-0'>
-                <span className='sr-only'>Open menu</span>
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(worker.id)}>
-                Copy worker ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSelectedWorker(worker)}>Edit</DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDeleteWorker(worker.id)}
-                className='text-red-600'
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      }
-    }
-  ]
-
+  // State for table
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [selectedWorker, setSelectedWorker] = React.useState<Worker | null>(null)
   const [globalFilter, setGlobalFilter] = React.useState('')
 
-  // Use state to store/show add worker dialog
+  // Dialog states
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
+  const [selectedWorker, setSelectedWorker] = React.useState<Worker | null>(null)
 
-  // Use state to store workers
-  const [workers, setWorkers] = React.useState<Worker[]>([])
+  // Confirmation dialog states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = React.useState(false)
+  const [workerToDelete, setWorkerToDelete] = React.useState<Worker | null>(null)
 
-  // Loading state
-  const [isLoading, setIsLoading] = React.useState(false)
+  // Get data and methods from store
+  const { workers, isLoading, fetchWorkers, addWorker, updateWorker, deleteWorker, deleteWorkers } =
+    useWorkersStore()
 
   // Fetch workers on component mount
   React.useEffect(() => {
     fetchWorkers()
-  }, [])
+  }, [fetchWorkers])
 
-  // Function to fetch workers from API
-  const fetchWorkers = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`${API_URL}/workers`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch workers')
-      }
-      const data = await response.json()
-      setWorkers(data)
-    } catch (error) {
-      console.error('Error fetching workers:', error)
-      toast.error('Error fetching workers. Please try again.')
-    } finally {
-      setIsLoading(false)
+  // Handle opening delete confirmation for a single worker
+  const handleDeleteWorkerClick = (worker: Worker) => {
+    setWorkerToDelete(worker)
+    setDeleteConfirmOpen(true)
+  }
+
+  // Handle actual deletion after confirmation
+  const confirmDeleteWorker = () => {
+    if (workerToDelete) {
+      deleteWorker(workerToDelete.id)
     }
   }
 
-  // Add function to handle adding new worker
-  const handleAddWorker = async (worker: Worker) => {
-    try {
-      const response = await fetch(`${API_URL}/workers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(worker)
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add worker')
-      }
-
-      const newWorker = await response.json()
-      setWorkers(prev => [...prev, newWorker])
-      setAddDialogOpen(false)
-
-      toast.success('Worker added successfully!')
-    } catch (error) {
-      console.error('Error adding worker:', error)
-      toast.error('Failed to add worker. Please try again.')
-    }
-  }
-
-  // Function to delete a single worker
-  const handleDeleteWorker = async (id: string) => {
-    try {
-      const response = await fetch(`${API_URL}/workers/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete worker')
-      }
-
-      setWorkers(prev => prev.filter(worker => worker.id !== id))
-
-      toast.success('Worker deleted successfully')
-    } catch (error) {
-      console.error('Error deleting worker:', error)
-      toast.error('Failed to delete worker. Please try again.')
-    }
-  }
-
-  // Add function to handle deleting (multiple) selected workers
-  const handleDeleteWorkers = async () => {
+  // Handle confirming multiple deletions
+  const confirmDeleteMultiple = () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows
     const selectedIds = selectedRows.map(row => row.original.id)
-
-    // Create a promise for each delete operation
-    const deletePromises = selectedIds.map(id =>
-      fetch(`${API_URL}/workers/${id}`, {
-        method: 'DELETE'
-      })
-    )
-
-    try {
-      // Wait for all delete operations to complete
-      const results = await Promise.allSettled(deletePromises)
-
-      // Check if any operations failed
-      const failedCount = results.filter(result => result.status === 'rejected').length
-
-      if (failedCount > 0) {
-        throw new Error(`Failed to delete ${failedCount} workers`)
-      }
-
-      // Update local state
-      setWorkers(prev => prev.filter(worker => !selectedIds.includes(worker.id)))
-      setRowSelection({}) // Clear selection after delete
-
-      toast.success(`${selectedIds.length} workers deleted successfully!`)
-    } catch (error) {
-      console.error('Error deleting workers:', error)
-      toast.error('Failed to delete some workers. Please refresh and try again.')
-
-      // Refresh the data to ensure it's in sync with the backend
-      fetchWorkers()
-    }
+    deleteWorkers(selectedIds)
+    setRowSelection({}) // Clear selection after delete
   }
 
-  // Add function to handle editing worker
+  // Handle adding new worker
+  const handleAddWorker = async (worker: Worker) => {
+    await addWorker(worker)
+    setAddDialogOpen(false)
+  }
+
+  // Handle editing worker
   const handleEditWorker = async (updatedWorker: Worker) => {
-    try {
-      const response = await fetch(`${API_URL}/workers/${updatedWorker.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatedWorker)
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update worker')
-      }
-
-      const updated = await response.json()
-      setWorkers(prev => prev.map(worker => (worker.id === updated.id ? updated : worker)))
-      setSelectedWorker(null) // Clear selected worker after edit
-      toast.success('Worker updated successfully!')
-    } catch (error) {
-      console.error('Error updating worker:', error)
-      toast.error('Failed to update worker. Please try again.')
-    }
+    await updateWorker(updatedWorker)
+    setSelectedWorker(null) // Clear selected worker after edit
   }
 
+  // Set up columns
+  const columns = React.useMemo(
+    () => getWorkerColumns(setSelectedWorker, handleDeleteWorkerClick),
+    [setSelectedWorker]
+  )
+
+  // Create table instance
   const table = useReactTable({
     data: workers,
     columns,
@@ -344,7 +121,7 @@ export function WorkersDataTable() {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
 
-    // Custom global filter function
+    // Custom global filter function that searches across all fields
     globalFilterFn: (row, columnId, filterValue) => {
       const search = filterValue.toLowerCase()
 
@@ -388,7 +165,7 @@ export function WorkersDataTable() {
         {/* Add workers dialog */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='ml-3' variant='outline'>
+            <Button className='mx-3' variant='outline'>
               <Plus className='mr-2 h-4 w-4' />
               Add Worker
             </Button>
@@ -404,7 +181,11 @@ export function WorkersDataTable() {
 
         {/* Delete workers button - show when rows are selected */}
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
-          <Button className='ml-3' variant='destructive' onClick={handleDeleteWorkers}>
+          <Button
+            className='ml-3'
+            variant='destructive'
+            onClick={() => setDeleteMultipleConfirmOpen(true)}
+          >
             Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
           </Button>
         )}
@@ -515,6 +296,28 @@ export function WorkersDataTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Single worker delete confirmation */}
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDeleteWorker}
+        title='Delete worker'
+        description={`Are you sure you want to delete ${workerToDelete?.name}? This action cannot be undone.`}
+        confirmText='Delete'
+        variant='destructive'
+      />
+
+      {/* Multiple workers delete confirmation */}
+      <ConfirmationDialog
+        isOpen={deleteMultipleConfirmOpen}
+        onClose={() => setDeleteMultipleConfirmOpen(false)}
+        onConfirm={confirmDeleteMultiple}
+        title='Delete multiple workers'
+        description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} workers? This action cannot be undone.`}
+        confirmText='Delete All'
+        variant='destructive'
+      />
     </>
   )
 }

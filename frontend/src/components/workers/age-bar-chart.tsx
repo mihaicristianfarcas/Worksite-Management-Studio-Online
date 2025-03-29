@@ -14,13 +14,23 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
-import { data } from '@/data/model'
 import { PersonStanding } from 'lucide-react'
+import { useWorkersStore } from '@/store/workers'
 
 export function WorkersAgeBarChart() {
+  // Get data and methods from store
+  const { workers, fetchWorkers } = useWorkersStore()
+
+  // Fetch workers on component mount
+  React.useEffect(() => {
+    fetchWorkers()
+  }, [fetchWorkers])
+
   // Transform worker data for the bar chart
   const chartData = React.useMemo(() => {
-    return data.map((worker, index) => {
+    if (!workers || workers.length === 0) return []
+    
+    return workers.map((worker, index) => {
       // Use modulo to cycle through colors if there are more workers than colors
       const colorIndex = (index % 20) + 1
       return {
@@ -29,7 +39,7 @@ export function WorkersAgeBarChart() {
         fill: `var(--chart-${colorIndex})`
       }
     })
-  }, [])
+  }, [workers])
 
   // Sort data by age for better visualization
   const sortedChartData = React.useMemo(() => {
@@ -44,7 +54,9 @@ export function WorkersAgeBarChart() {
       }
     }
 
-    data.forEach((worker, index) => {
+    if (!workers || workers.length === 0) return config
+
+    workers.forEach((worker, index) => {
       const colorIndex = (index % 20) + 1
       config[worker.name] = {
         label: worker.name,
@@ -53,22 +65,42 @@ export function WorkersAgeBarChart() {
     })
 
     return config
-  }, [])
+  }, [workers])
 
   // Calculate average age
   const averageAge = React.useMemo(() => {
-    return Math.round(data.reduce((acc, curr) => acc + curr.age, 0) / data.length)
-  }, [])
+    if (!workers || workers.length === 0) return 0
+    return Math.round(workers.reduce((acc, curr) => acc + curr.age, 0) / workers.length)
+  }, [workers])
 
   // Get oldest worker
   const oldestWorker = React.useMemo(() => {
-    return data.reduce((acc, curr) => (acc.age > curr.age ? acc : curr))
-  }, [])
+    if (!workers || workers.length === 0) return { name: 'N/A', age: 0 }
+    return workers.reduce((acc, curr) => (acc.age > curr.age ? acc : curr))
+  }, [workers])
 
   // Get youngest worker
   const youngestWorker = React.useMemo(() => {
-    return data.reduce((acc, curr) => (acc.age < curr.age ? acc : curr))
-  }, [])
+    if (!workers || workers.length === 0) return { name: 'N/A', age: 0 }
+    return workers.reduce((acc, curr) => (acc.age < curr.age ? acc : curr))
+  }, [workers])
+
+  // Display loading state or empty state if no data
+  if (!workers || workers.length === 0) {
+    return (
+      <Card className='flex h-full flex-col'>
+        <CardHeader className='items-center pb-2 text-center'>
+          <CardTitle>Workers Age Distribution</CardTitle>
+          <CardDescription>Construction Team Overview</CardDescription>
+        </CardHeader>
+        <CardContent className='flex-1 flex items-center justify-center'>
+          <p className='text-muted-foreground'>
+            {!workers ? 'Loading worker data...' : 'No worker data available'}
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className='flex h-full flex-col'>
