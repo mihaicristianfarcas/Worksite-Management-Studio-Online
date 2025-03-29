@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { toast } from 'sonner'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
@@ -35,7 +34,6 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
     }
 
     onAddWorker(newWorker)
-    toast.success('Worker added successfully!')
     reset()
   }
 

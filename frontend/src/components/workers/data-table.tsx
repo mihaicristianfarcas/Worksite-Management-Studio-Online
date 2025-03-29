@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -42,8 +42,11 @@ import {
   DialogTrigger
 } from '../ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
-import { data } from '@/data/model'
 import { Worker } from '@/data/model'
+import { toast } from 'sonner'
+
+// API base URL - make sure this matches your backend
+const API_URL = 'http://localhost:8080/api'
 
 export function WorkersDataTable() {
   const columns: ColumnDef<Worker>[] = [
@@ -168,6 +171,12 @@ export function WorkersDataTable() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSelectedWorker(worker)}>Edit</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDeleteWorker(worker.id)}
+                className='text-red-600'
+              >
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )
@@ -180,33 +189,146 @@ export function WorkersDataTable() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [selectedWorker, setSelectedWorker] = React.useState<Worker | null>(null)
+  const [globalFilter, setGlobalFilter] = React.useState('')
 
   // Use state to store/show add worker dialog
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
 
-  // Use state to store/show workers
-  const [workers, setWorkers] = React.useState<Worker[]>(data)
+  // Use state to store workers
+  const [workers, setWorkers] = React.useState<Worker[]>([])
 
-  // Add function to handle adding new worker
-  const handleAddWorker = (worker: Worker) => {
-    setWorkers(prev => [...prev, worker])
-    setAddDialogOpen(false)
+  // Loading state
+  const [isLoading, setIsLoading] = React.useState(false)
+
+  // Fetch workers on component mount
+  React.useEffect(() => {
+    fetchWorkers()
+  }, [])
+
+  // Function to fetch workers from API
+  const fetchWorkers = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_URL}/workers`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch workers')
+      }
+      const data = await response.json()
+      setWorkers(data)
+    } catch (error) {
+      console.error('Error fetching workers:', error)
+      toast.error('Error fetching workers. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // Add function to handle deleting selected workers
-  const handleDeleteWorkers = () => {
+  // Add function to handle adding new worker
+  const handleAddWorker = async (worker: Worker) => {
+    try {
+      const response = await fetch(`${API_URL}/workers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(worker)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add worker')
+      }
+
+      const newWorker = await response.json()
+      setWorkers(prev => [...prev, newWorker])
+      setAddDialogOpen(false)
+
+      toast.success('Worker added successfully!')
+    } catch (error) {
+      console.error('Error adding worker:', error)
+      toast.error('Failed to add worker. Please try again.')
+    }
+  }
+
+  // Function to delete a single worker
+  const handleDeleteWorker = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/workers/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete worker')
+      }
+
+      setWorkers(prev => prev.filter(worker => worker.id !== id))
+
+      toast.success('Worker deleted successfully')
+    } catch (error) {
+      console.error('Error deleting worker:', error)
+      toast.error('Failed to delete worker. Please try again.')
+    }
+  }
+
+  // Add function to handle deleting (multiple) selected workers
+  const handleDeleteWorkers = async () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows
     const selectedIds = selectedRows.map(row => row.original.id)
-    setWorkers(prev => prev.filter(worker => !selectedIds.includes(worker.id)))
-    setRowSelection({}) // Clear selection after delete
+
+    // Create a promise for each delete operation
+    const deletePromises = selectedIds.map(id =>
+      fetch(`${API_URL}/workers/${id}`, {
+        method: 'DELETE'
+      })
+    )
+
+    try {
+      // Wait for all delete operations to complete
+      const results = await Promise.allSettled(deletePromises)
+
+      // Check if any operations failed
+      const failedCount = results.filter(result => result.status === 'rejected').length
+
+      if (failedCount > 0) {
+        throw new Error(`Failed to delete ${failedCount} workers`)
+      }
+
+      // Update local state
+      setWorkers(prev => prev.filter(worker => !selectedIds.includes(worker.id)))
+      setRowSelection({}) // Clear selection after delete
+
+      toast.success(`${selectedIds.length} workers deleted successfully!`)
+    } catch (error) {
+      console.error('Error deleting workers:', error)
+      toast.error('Failed to delete some workers. Please refresh and try again.')
+
+      // Refresh the data to ensure it's in sync with the backend
+      fetchWorkers()
+    }
   }
 
   // Add function to handle editing worker
-  const handleEditWorker = (updatedWorker: Worker) => {
-    setWorkers(prev =>
-      prev.map(worker => (worker.id === updatedWorker.id ? updatedWorker : worker))
-    )
-    setSelectedWorker(null) // Clear selected worker after edit
+  const handleEditWorker = async (updatedWorker: Worker) => {
+    try {
+      const response = await fetch(`${API_URL}/workers/${updatedWorker.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedWorker)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update worker')
+      }
+
+      const updated = await response.json()
+      setWorkers(prev => prev.map(worker => (worker.id === updated.id ? updated : worker)))
+      setSelectedWorker(null) // Clear selected worker after edit
+      toast.success('Worker updated successfully!')
+    } catch (error) {
+      console.error('Error updating worker:', error)
+      toast.error('Failed to update worker. Please try again.')
+    }
   }
 
   const table = useReactTable({
@@ -220,11 +342,31 @@ export function WorkersDataTable() {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
+
+    // Custom global filter function
+    globalFilterFn: (row, columnId, filterValue) => {
+      const search = filterValue.toLowerCase()
+
+      // Check all accessible values in the row
+      return Object.values(row.original).some(value => {
+        // Handle nested objects and arrays
+        if (typeof value === 'object' && value !== null) {
+          return Object.values(value).some(nestedValue =>
+            String(nestedValue).toLowerCase().includes(search)
+          )
+        }
+
+        // Handle primitive values
+        return String(value).toLowerCase().includes(search)
+      })
+    },
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection
+      rowSelection,
+      globalFilter
     }
   })
 
@@ -233,15 +375,20 @@ export function WorkersDataTable() {
       <div className='flex items-center py-4'>
         <Input
           placeholder='Search workers...'
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={event => table.getColumn('name')?.setFilterValue(event.target.value)}
+          value={globalFilter}
+          onChange={event => setGlobalFilter(event.target.value)}
           className='max-w-sm'
         />
+
+        {/* Refresh button */}
+        <Button className='ml-3' variant='outline' onClick={fetchWorkers} disabled={isLoading}>
+          <RefreshCcwDot className='h-4 w-4' />
+        </Button>
 
         {/* Add workers dialog */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='ml-3' variant='ghost'>
+            <Button className='ml-3' variant='outline'>
               <Plus className='mr-2 h-4 w-4' />
               Add Worker
             </Button>
@@ -305,7 +452,13 @@ export function WorkersDataTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                  Loading workers...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow key={row.id} className='hover:bg-muted/30'>
                   {row.getVisibleCells().map(cell => (
@@ -350,7 +503,7 @@ export function WorkersDataTable() {
         </div>
       </div>
 
-      {/* Add Edit worker dialog */}
+      {/* Edit worker dialog */}
       <Dialog open={!!selectedWorker} onOpenChange={open => !open && setSelectedWorker(null)}>
         <DialogContent>
           <DialogHeader>
