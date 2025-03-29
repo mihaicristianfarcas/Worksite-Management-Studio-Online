@@ -147,6 +147,11 @@ export function WorkersDataTable() {
     }
   })
 
+  // Calculate total table width based on column sizes
+  const tableWidth = React.useMemo(() => {
+    return columns.reduce((acc, column) => acc + (column.size || 150), 0)
+  }, [columns])
+
   return (
     <>
       <div className='flex items-center py-4'>
@@ -222,7 +227,11 @@ export function WorkersDataTable() {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
                   return (
-                    <TableHead key={header.id} className='py-1.5'>
+                    <TableHead
+                      key={header.id}
+                      className='py-1.5 text-center'
+                      style={{ width: `${header.column.getSize()}px` }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -236,14 +245,18 @@ export function WorkersDataTable() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className='h-24 text-center'>
-                  Loading workers...
+                  <div className='flex h-full items-center justify-center'>Loading workers...</div>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow key={row.id} className='hover:bg-muted/30'>
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id} className='py-3 text-center'>
+                    <TableCell
+                      key={cell.id}
+                      className='py-3 text-center'
+                      style={{ width: `${cell.column.getSize()}px` }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -252,7 +265,7 @@ export function WorkersDataTable() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className='h-24 text-center'>
-                  No results.
+                  <div className='flex h-full items-center justify-center'>No results.</div>
                 </TableCell>
               </TableRow>
             )}

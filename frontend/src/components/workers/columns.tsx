@@ -42,7 +42,8 @@ export function getWorkerColumns(
         </div>
       ),
       enableSorting: false,
-      enableHiding: false
+      enableHiding: false,
+      size: 50 // Fixed width for checkbox column
     },
     {
       accessorKey: 'name',
@@ -58,7 +59,8 @@ export function getWorkerColumns(
           </Button>
         )
       },
-      cell: ({ row }) => <div className='px-4 capitalize'>{row.getValue('name')}</div>
+      cell: ({ row }) => <div className='px-4 text-center capitalize'>{row.getValue('name')}</div>,
+      size: 200 // Fixed width for name column
     },
     {
       accessorKey: 'age',
@@ -74,7 +76,8 @@ export function getWorkerColumns(
           </Button>
         )
       },
-      cell: ({ row }) => <div className='px-4'>{row.getValue('age')}</div>
+      cell: ({ row }) => <div className='px-4 text-center'>{row.getValue('age')}</div>,
+      size: 100 // Fixed width for age column
     },
     {
       accessorKey: 'position',
@@ -90,7 +93,10 @@ export function getWorkerColumns(
           </Button>
         )
       },
-      cell: ({ row }) => <div className='px-4 capitalize'>{row.getValue('position')}</div>
+      cell: ({ row }) => (
+        <div className='px-4 text-center capitalize'>{row.getValue('position')}</div>
+      ),
+      size: 200 // Fixed width for position column
     },
     {
       accessorKey: 'salary',
@@ -115,8 +121,9 @@ export function getWorkerColumns(
           currency: 'RON'
         }).format(amount)
 
-        return <div className='px-4 font-medium'>{formatted}</div>
-      }
+        return <div className='px-4 text-center font-medium'>{formatted}</div>
+      },
+      size: 150 // Fixed width for salary column
     },
     {
       id: 'actions',
@@ -145,7 +152,8 @@ export function getWorkerColumns(
             </DropdownMenuContent>
           </DropdownMenu>
         )
-      }
+      },
+      size: 80 // Fixed width for actions column
     }
   ]
 }
