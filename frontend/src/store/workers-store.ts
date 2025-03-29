@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { workersApi, Worker } from '@/api/workers'
+import { workersApi, Worker } from '@/api/workers-api'
 import { toast } from 'sonner'
 
 interface WorkersState {

@@ -15,13 +15,13 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart'
 import { PersonStanding } from 'lucide-react'
-import { useWorkersStore } from '@/store/workers'
+import { useWorkersStore } from '@/store/workers-store'
 
 export function WorkersAgeBarChart() {
   // Get data and methods from store
   const { workers, fetchWorkers } = useWorkersStore()
 
-  // Fetch workers on component mount
+  // Fetch workers data when the component mounts
   React.useEffect(() => {
     fetchWorkers()
   }, [fetchWorkers])
@@ -29,7 +29,7 @@ export function WorkersAgeBarChart() {
   // Transform worker data for the bar chart
   const chartData = React.useMemo(() => {
     if (!workers || workers.length === 0) return []
-    
+
     return workers.map((worker, index) => {
       // Use modulo to cycle through colors if there are more workers than colors
       const colorIndex = (index % 20) + 1
@@ -93,7 +93,7 @@ export function WorkersAgeBarChart() {
           <CardTitle>Workers Age Distribution</CardTitle>
           <CardDescription>Construction Team Overview</CardDescription>
         </CardHeader>
-        <CardContent className='flex-1 flex items-center justify-center'>
+        <CardContent className='flex flex-1 items-center justify-center'>
           <p className='text-muted-foreground'>
             {!workers ? 'Loading worker data...' : 'No worker data available'}
           </p>
@@ -111,17 +111,7 @@ export function WorkersAgeBarChart() {
       <CardContent className='flex-1 px-2 pb-0'>
         <ChartContainer config={chartConfig} className='h-[250px] w-full'>
           <ResponsiveContainer width='100%' height='100%'>
-            <BarChart
-              accessibilityLayer
-              data={sortedChartData}
-              layout='vertical'
-              margin={{
-                left: 5,
-                right: 15,
-                top: 5,
-                bottom: 5
-              }}
-            >
+            <BarChart accessibilityLayer data={sortedChartData} layout='vertical'>
               <YAxis
                 dataKey='name'
                 type='category'

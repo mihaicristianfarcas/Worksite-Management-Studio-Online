@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Worker } from '@/api/workers'
+import { Worker } from '@/api/workers-api'
 
 // Column definitions factory
 export function getWorkerColumns(

@@ -16,12 +16,13 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
-import { useWorkersStore } from '@/store/workers'
+import { useWorkersStore } from '@/store/workers-store'
 
 export function WorkersSalaryPieChart() {
+  // Get data and methods from store
   const { workers, fetchWorkers } = useWorkersStore()
 
-  // Fetch workers on component mount
+  // Fetch workers data when the component mounts
   React.useEffect(() => {
     fetchWorkers()
   }, [fetchWorkers])
@@ -29,7 +30,7 @@ export function WorkersSalaryPieChart() {
   // Transform worker data for the pie chart
   const chartData = React.useMemo(() => {
     if (!workers || workers.length === 0) return []
-    
+
     return workers.map((worker, index) => {
       // Create a color palette using CSS variables
       const colorIndex = index + 1
@@ -76,7 +77,7 @@ export function WorkersSalaryPieChart() {
           <CardTitle>Workers Salary Distribution</CardTitle>
           <CardDescription>Construction Team Overview</CardDescription>
         </CardHeader>
-        <CardContent className='flex-1 flex items-center justify-center'>
+        <CardContent className='flex flex-1 items-center justify-center'>
           <p className='text-muted-foreground'>
             {!workers ? 'Loading worker data...' : 'No worker data available'}
           </p>
@@ -96,15 +97,9 @@ export function WorkersSalaryPieChart() {
           config={chartConfig}
           className='mx-auto aspect-square h-[250px] max-w-[250px]'
         >
-          <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+          <PieChart>
             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-            <Pie
-              data={chartData}
-              dataKey='salary'
-              nameKey='name'
-              innerRadius={window.innerWidth < 640 ? 40 : 60}
-              strokeWidth={5}
-            >
+            <Pie data={chartData} dataKey='salary' nameKey='name' innerRadius={60} strokeWidth={5}>
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {

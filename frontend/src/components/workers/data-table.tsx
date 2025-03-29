@@ -37,9 +37,9 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
-import { Worker } from '@/api/workers'
+import { Worker } from '@/api/workers-api'
 import { getWorkerColumns } from './columns'
-import { useWorkersStore } from '@/store/workers'
+import { useWorkersStore } from '@/store/workers-store'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 export function WorkersDataTable() {
@@ -63,7 +63,7 @@ export function WorkersDataTable() {
   const { workers, isLoading, fetchWorkers, addWorker, updateWorker, deleteWorker, deleteWorkers } =
     useWorkersStore()
 
-  // Fetch workers on component mount
+  // Fetch workers data on mount
   React.useEffect(() => {
     fetchWorkers()
   }, [fetchWorkers])
