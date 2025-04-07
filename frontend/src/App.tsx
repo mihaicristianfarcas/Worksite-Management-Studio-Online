@@ -32,7 +32,7 @@ function App() {
                 {isMobile && <SidebarTrigger />}
                 <div className='mx-auto w-[calc(100%-4rem)]'>
                   <Routes>
-                    <Route path='//dashboard' element={<Dashboard />} />
+                    <Route path='/dashboard' element={<Dashboard />} />
                     <Route path='/calendar' element={<Calendar />} />
                     <Route path='/projects' element={<Projects />} />
                     <Route path='/settings' element={<Settings />} />
