@@ -279,6 +279,8 @@ func TestGetAllWorkersWithFilters(t *testing.T) {
 		{ID: "1", Name: "John", Age: 25, Position: "Developer", Salary: 50000},
 		{ID: "2", Name: "Jane", Age: 30, Position: "Manager", Salary: 70000},
 		{ID: "3", Name: "Bob", Age: 35, Position: "Developer", Salary: 60000},
+		{ID: "4", Name: "Alice", Age: 28, Position: "Developer", Salary: 55000},
+		{ID: "5", Name: "Charlie", Age: 32, Position: "Manager", Salary: 75000},
 	}
 	for _, w := range workers {
 		repo.CreateWorker(w)
@@ -290,42 +292,96 @@ func TestGetAllWorkersWithFilters(t *testing.T) {
 		query          string
 		expectedCount  int
 		expectedStatus int
+		verifyResults  func(t *testing.T, response PaginatedResponse)
 	}{
 		{
 			name:           "Filter by position",
 			query:          "?position=Developer",
-			expectedCount:  2,
+			expectedCount:  3,
 			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for _, worker := range response.Data {
+					assert.Equal(t, "Developer", worker.Position)
+				}
+			},
 		},
 		{
 			name:           "Filter by age range",
 			query:          "?min_age=25&max_age=30",
-			expectedCount:  2,
+			expectedCount:  3,
 			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for _, worker := range response.Data {
+					assert.GreaterOrEqual(t, worker.Age, 25)
+					assert.LessOrEqual(t, worker.Age, 30)
+				}
+			},
 		},
 		{
 			name:           "Filter by salary range",
 			query:          "?min_salary=55000&max_salary=65000",
-			expectedCount:  1,
+			expectedCount:  2,
 			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for _, worker := range response.Data {
+					assert.GreaterOrEqual(t, worker.Salary, 55000)
+					assert.LessOrEqual(t, worker.Salary, 65000)
+				}
+			},
 		},
 		{
 			name:           "Sort by name ascending",
 			query:          "?sort_by=name&sort_order=asc",
-			expectedCount:  3,
+			expectedCount:  5,
 			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for i := 1; i < len(response.Data); i++ {
+					assert.LessOrEqual(t, response.Data[i-1].Name, response.Data[i].Name)
+				}
+			},
 		},
 		{
 			name:           "Sort by salary descending",
 			query:          "?sort_by=salary&sort_order=desc",
+			expectedCount:  5,
+			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for i := 1; i < len(response.Data); i++ {
+					assert.GreaterOrEqual(t, response.Data[i-1].Salary, response.Data[i].Salary)
+				}
+			},
+		},
+		{
+			name:           "Combined filters",
+			query:          "?position=Developer&min_age=25&max_age=35&min_salary=50000&max_salary=60000",
 			expectedCount:  3,
 			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				for _, worker := range response.Data {
+					assert.Equal(t, "Developer", worker.Position)
+					assert.GreaterOrEqual(t, worker.Age, 25)
+					assert.LessOrEqual(t, worker.Age, 35)
+					assert.GreaterOrEqual(t, worker.Salary, 50000)
+					assert.LessOrEqual(t, worker.Salary, 60000)
+				}
+			},
+		},
+		{
+			name:           "Pagination",
+			query:          "?page=1&pageSize=2",
+			expectedCount:  2,
+			expectedStatus: http.StatusOK,
+			verifyResults: func(t *testing.T, response PaginatedResponse) {
+				assert.Equal(t, 1, response.Page)
+				assert.Equal(t, 2, response.PageSize)
+				assert.Equal(t, 5, response.Total)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/workers"+tt.query, nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/workers"+tt.query, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
@@ -333,10 +389,14 @@ func TestGetAllWorkersWithFilters(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var response []model.Worker
+			var response PaginatedResponse
 			err = json.Unmarshal(rec.Body.Bytes(), &response)
 			assert.NoError(t, err)
-			assert.Len(t, response, tt.expectedCount)
+			assert.Len(t, response.Data, tt.expectedCount)
+
+			if tt.verifyResults != nil {
+				tt.verifyResults(t, response)
+			}
 		})
 	}
 }

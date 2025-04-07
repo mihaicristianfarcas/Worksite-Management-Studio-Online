@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
@@ -24,10 +25,12 @@ func NewController(repo *repository.Repository) *Controller {
 
 type FilterParams struct {
 	Position  string `query:"position"`
-	MinAge    int    `query:"minAge"`
-	MaxAge    int    `query:"maxAge"`
+	MinAge    int    `query:"min_age"`
+	MaxAge    int    `query:"max_age"`
 	MinSalary int    `query:"min_salary"`
 	MaxSalary int    `query:"max_salary"`
+	SortBy    string `query:"sort_by"`
+	SortOrder string `query:"sort_order"` // "asc" or "desc"
 	Page      int    `query:"page"`
 	PageSize  int    `query:"pageSize"`
 }
@@ -42,10 +45,13 @@ type PaginatedResponse struct {
 // Get all workers
 // GET /workers
 // Filter by position: ?position=Developer
-// Filter by age: ?minAge=25&maxAge=30
+// Filter by age: ?min_age=25&max_age=30
 // Filter by salary: ?min_salary=50000&max_salary=70000
+// Sort by name: ?sort_by=name&sort_order=asc
+// Sort by age: ?sort_by=age&sort_order=desc
+// Sort by salary: ?sort_by=salary&sort_order=asc
 // Pagination: ?page=1&pageSize=10
-// Combine filters: ?position=Developer&minAge=25&sortBy=salary&page=1&pageSize=10
+// Combine filters: ?position=Developer&min_age=25&sort_by=salary&page=1&pageSize=10
 
 func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 	var params FilterParams
@@ -71,6 +77,31 @@ func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 	)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	// Apply sorting
+	if params.SortBy != "" {
+		sort.Slice(filteredWorkers, func(i, j int) bool {
+			switch params.SortBy {
+			case "name":
+				if params.SortOrder == "desc" {
+					return filteredWorkers[i].Name > filteredWorkers[j].Name
+				}
+				return filteredWorkers[i].Name < filteredWorkers[j].Name
+			case "age":
+				if params.SortOrder == "desc" {
+					return filteredWorkers[i].Age > filteredWorkers[j].Age
+				}
+				return filteredWorkers[i].Age < filteredWorkers[j].Age
+			case "salary":
+				if params.SortOrder == "desc" {
+					return filteredWorkers[i].Salary > filteredWorkers[j].Salary
+				}
+				return filteredWorkers[i].Salary < filteredWorkers[j].Salary
+			default:
+				return false
+			}
+		})
 	}
 
 	// Apply pagination
