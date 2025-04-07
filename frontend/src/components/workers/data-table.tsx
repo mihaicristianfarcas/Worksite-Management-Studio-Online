@@ -7,11 +7,10 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, Filter, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -42,9 +41,11 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
-import { Worker } from '@/api/workers-api'
+import { Worker, WorkerFilters } from '@/api/workers-api'
 import { useWorkersStore } from '@/store/workers-store'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export function WorkersDataTable() {
   // State for table
@@ -63,6 +64,10 @@ export function WorkersDataTable() {
   const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = React.useState(false)
   const [workerToDelete, setWorkerToDelete] = React.useState<Worker | null>(null)
 
+  // Filter states
+  const [filters, setFilters] = React.useState<WorkerFilters>({})
+  const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false)
+
   // Get data and methods from store
   const {
     workers,
@@ -72,13 +77,14 @@ export function WorkersDataTable() {
     addWorker,
     updateWorker,
     deleteWorker,
-    deleteWorkers
+    deleteWorkers,
+    setFilters: setStoreFilters
   } = useWorkersStore()
 
   // Fetch workers data on mount
   React.useEffect(() => {
-    fetchWorkers()
-  }, [fetchWorkers])
+    fetchWorkers(filters, pagination.page, pagination.pageSize)
+  }, [fetchWorkers, filters, pagination.page, pagination.pageSize])
 
   // Handle opening delete confirmation for a single worker
   const handleDeleteWorkerClick = (worker: Worker) => {
@@ -90,6 +96,7 @@ export function WorkersDataTable() {
   const confirmDeleteWorker = () => {
     if (workerToDelete) {
       deleteWorker(workerToDelete.id)
+      fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
     }
   }
 
@@ -99,18 +106,46 @@ export function WorkersDataTable() {
     const selectedIds = selectedRows.map(row => row.original.id)
     deleteWorkers(selectedIds)
     setRowSelection({}) // Clear selection after delete
+    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
   }
 
   // Handle adding new worker
   const handleAddWorker = async (worker: Worker) => {
     await addWorker(worker)
     setAddDialogOpen(false)
+    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
   }
 
   // Handle editing worker
   const handleEditWorker = async (updatedWorker: Worker) => {
     await updateWorker(updatedWorker)
     setSelectedWorker(null) // Clear selected worker after edit
+    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
+  }
+
+  // Handle filter changes
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    const updatedFilters = {
+      ...filters,
+      [name]:
+        value === ''
+          ? undefined
+          : name.includes('Age') || name.includes('Salary')
+            ? Number(value)
+            : value
+    }
+
+    setFilters(updatedFilters)
+    setStoreFilters(updatedFilters)
+  }
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({})
+    setStoreFilters({})
+    setFilterPopoverOpen(false)
+    fetchWorkers({}, pagination.page, pagination.pageSize) // Fetch all workers
   }
 
   // Define columns
@@ -269,7 +304,6 @@ export function WorkersDataTable() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -302,10 +336,10 @@ export function WorkersDataTable() {
     }
   })
 
-  // Calculate total table width based on column sizes
-  const tableWidth = React.useMemo(() => {
-    return columns.reduce((acc, column) => acc + (column.size || 150), 0)
-  }, [columns])
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    fetchWorkers(filters, newPage, pagination.pageSize)
+  }
 
   return (
     <>
@@ -317,11 +351,91 @@ export function WorkersDataTable() {
           className='max-w-sm'
         />
 
+        {/* Filter popover */}
+        <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button className='ml-3' variant='outline'>
+              <Filter className='mr-2 h-4 w-4' />
+              Filter
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-80'>
+            <div className='grid gap-4'>
+              <div className='space-y-2'>
+                <h4 className='font-medium leading-none'>Filter Workers</h4>
+                <p className='text-muted-foreground text-sm'>
+                  Set filters to find specific workers
+                </p>
+              </div>
+              <div className='grid gap-2'>
+                <div className='grid grid-cols-3 items-center gap-4'>
+                  <Label htmlFor='minAge'>Minimum Age</Label>
+                  <Input
+                    id='minAge'
+                    name='minAge'
+                    type='number'
+                    className='col-span-2'
+                    value={filters.minAge || ''}
+                    onChange={handleFilterChange}
+                  />
+                </div>
+                <div className='grid grid-cols-3 items-center gap-4'>
+                  <Label htmlFor='maxAge'>Maximum Age</Label>
+                  <Input
+                    id='maxAge'
+                    name='maxAge'
+                    type='number'
+                    className='col-span-2'
+                    value={filters.maxAge || ''}
+                    onChange={handleFilterChange}
+                  />
+                </div>
+                <div className='grid grid-cols-3 items-center gap-4'>
+                  <Label htmlFor='minSalary'>Minimum Salary</Label>
+                  <Input
+                    id='minSalary'
+                    name='minSalary'
+                    type='number'
+                    className='col-span-2'
+                    value={filters.minSalary || ''}
+                    onChange={handleFilterChange}
+                  />
+                </div>
+                <div className='grid grid-cols-3 items-center gap-4'>
+                  <Label htmlFor='maxSalary'>Maximum Salary</Label>
+                  <Input
+                    id='maxSalary'
+                    name='maxSalary'
+                    type='number'
+                    className='col-span-2'
+                    value={filters.maxSalary || ''}
+                    onChange={handleFilterChange}
+                  />
+                </div>
+                <div className='grid grid-cols-3 items-center gap-4'>
+                  <Label htmlFor='position'>Position</Label>
+                  <Input
+                    id='position'
+                    name='position'
+                    type='text'
+                    className='col-span-2'
+                    value={filters.position || ''}
+                    onChange={handleFilterChange}
+                  />
+                </div>
+              </div>
+              <Button variant='outline' onClick={resetFilters}>
+                Reset
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* Refresh button */}
         <Button
           className='ml-3'
           variant='outline'
-          onClick={() => fetchWorkers()}
+          onClick={() => fetchWorkers(filters, pagination.page, pagination.pageSize)}
           disabled={loadingState === 'loading'}
         >
           <RefreshCcwDot className='h-4 w-4' />
@@ -402,13 +516,7 @@ export function WorkersDataTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {loadingState === 'loading' ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className='h-24 text-center'>
-                  <div className='flex h-full items-center justify-center'>Loading workers...</div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow key={row.id} className='hover:bg-muted/30'>
                   {row.getVisibleCells().map(cell => (
@@ -437,19 +545,26 @@ export function WorkersDataTable() {
           {table.getFilteredSelectedRowModel().rows.length} of {pagination.total} row(s) selected.
         </div>
         <div className='space-x-2'>
+          <span className='text-muted-foreground text-sm'>
+            Page {pagination.page} of {Math.ceil(pagination.total / pagination.pageSize)}
+          </span>
           <Button
             variant='outline'
             size='sm'
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => {
+              handlePageChange(pagination.page - 1)
+            }}
+            disabled={pagination.page <= 1}
           >
             Previous
           </Button>
           <Button
             variant='outline'
             size='sm'
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => {
+              handlePageChange(pagination.page + 1)
+            }}
+            disabled={pagination.page * pagination.pageSize >= pagination.total}
           >
             Next
           </Button>
