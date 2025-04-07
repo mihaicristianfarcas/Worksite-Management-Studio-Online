@@ -16,9 +16,10 @@ type Controller struct {
 }
 
 func NewController(repo *repository.Repository) *Controller {
+	validate := validator.New()
 	return &Controller{
 		repo:     repo,
-		validate: validator.New(),
+		validate: validate,
 	}
 }
 
@@ -120,7 +121,15 @@ func (c *Controller) CreateWorker(ctx echo.Context) error {
 
 	// Validate worker data
 	if err := c.validate.Struct(worker); err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		validationErrors := err.(validator.ValidationErrors)
+		errorMessages := make([]string, len(validationErrors))
+		for i, e := range validationErrors {
+			errorMessages[i] = e.Field() + ": " + e.Tag()
+		}
+		return ctx.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error": "Validation failed",
+			"details": errorMessages,
+		})
 	}
 	
 	if err := c.repo.CreateWorker(worker); err != nil {
@@ -143,7 +152,15 @@ func (c *Controller) UpdateWorker(ctx echo.Context) error {
 
 	// Validate worker data
 	if err := c.validate.Struct(worker); err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		validationErrors := err.(validator.ValidationErrors)
+		errorMessages := make([]string, len(validationErrors))
+		for i, e := range validationErrors {
+			errorMessages[i] = e.Field() + ": " + e.Tag()
+		}
+		return ctx.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error": "Validation failed",
+			"details": errorMessages,
+		})
 	}
 	
 	if err := c.repo.UpdateWorker(worker); err != nil {
