@@ -24,12 +24,12 @@ func NewController(repo *repository.Repository) *Controller {
 }
 
 type FilterParams struct {
-	Position string `query:"position"`
-	MinAge   int    `query:"min_age"`
-	MaxAge   int    `query:"max_age"`
-	MinSalary int   `query:"min_salary"`
-	MaxSalary int   `query:"max_salary"`
-	SortBy   string `query:"sort_by"`
+	Position  string `query:"position"`
+	MinAge    int    `query:"min_age"`
+	MaxAge    int    `query:"max_age"`
+	MinSalary int    `query:"min_salary"`
+	MaxSalary int    `query:"max_salary"`
+	SortBy    string `query:"sort_by"`
 	SortOrder string `query:"sort_order"`
 }
 
@@ -116,7 +116,7 @@ func (c *Controller) CreateWorker(ctx echo.Context) error {
 	worker := model.Worker{}
 	
 	if err := ctx.Bind(&worker); err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
 	}
 
 	// Validate worker data
@@ -126,14 +126,14 @@ func (c *Controller) CreateWorker(ctx echo.Context) error {
 		for i, e := range validationErrors {
 			errorMessages[i] = e.Field() + ": " + e.Tag()
 		}
-		return ctx.JSON(http.StatusBadRequest, map[string]interface{}{
+		return echo.NewHTTPError(http.StatusBadRequest, map[string]interface{}{
 			"error": "Validation failed",
 			"details": errorMessages,
 		})
 	}
 	
 	if err := c.repo.CreateWorker(worker); err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
 	return ctx.JSON(http.StatusCreated, worker)
@@ -144,7 +144,7 @@ func (c *Controller) UpdateWorker(ctx echo.Context) error {
 	
 	worker := model.Worker{}
 	if err := ctx.Bind(&worker); err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
 	}
 	
 	// Ensure ID in path matches body
@@ -157,14 +157,14 @@ func (c *Controller) UpdateWorker(ctx echo.Context) error {
 		for i, e := range validationErrors {
 			errorMessages[i] = e.Field() + ": " + e.Tag()
 		}
-		return ctx.JSON(http.StatusBadRequest, map[string]interface{}{
+		return echo.NewHTTPError(http.StatusBadRequest, map[string]interface{}{
 			"error": "Validation failed",
 			"details": errorMessages,
 		})
 	}
 	
 	if err := c.repo.UpdateWorker(worker); err != nil {
-		return ctx.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 	
 	return ctx.JSON(http.StatusOK, worker)
@@ -174,7 +174,7 @@ func (c *Controller) DeleteWorker(ctx echo.Context) error {
 	id := ctx.Param("id")
 	
 	if err := c.repo.DeleteWorker(id); err != nil {
-		return ctx.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 	
 	return ctx.JSON(http.StatusOK, map[string]string{"message": "Worker deleted successfully"})

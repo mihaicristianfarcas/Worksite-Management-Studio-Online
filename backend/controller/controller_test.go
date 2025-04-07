@@ -342,157 +342,162 @@ func TestGetAllWorkersWithFilters(t *testing.T) {
 }
 
 func TestCreateWorkerValidation(t *testing.T) {
-	// Setup
-	e := echo.New()
-	repo := repository.NewRepository()
-	controller := NewController(repo)
+    // Setup
+    e := echo.New()
+    e.HTTPErrorHandler = echo.New().DefaultHTTPErrorHandler
+    
+    repo := repository.NewRepository()
+    controller := NewController(repo)
 
-	// Test cases
-	tests := []struct {
-		name           string
-		worker         model.Worker
-		expectedStatus int
-	}{
-		{
-			name: "Valid worker",
-			worker: model.Worker{
-				ID:       "1",
-				Name:     "John Doe",
-				Age:      25,
-				Position: "Developer",
-				Salary:   50000,
-			},
-			expectedStatus: http.StatusCreated,
-		},
-		{
-			name: "Invalid age",
-			worker: model.Worker{
-				ID:       "2",
-				Name:     "Young Worker",
-				Age:      15, // Below minimum age
-				Position: "Intern",
-				Salary:   20000,
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "Invalid name length",
-			worker: model.Worker{
-				ID:       "3",
-				Name:     "A", // Too short
-				Age:      25,
-				Position: "Developer",
-				Salary:   50000,
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "Invalid salary",
-			worker: model.Worker{
-				ID:       "4",
-				Name:     "John Doe",
-				Age:      25,
-				Position: "Developer",
-				Salary:   -1000, // Negative salary
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-	}
+    // Test cases
+    tests := []struct {
+        name           string
+        worker         model.Worker
+        expectedStatus int
+    }{
+        {
+            name: "Valid worker",
+            worker: model.Worker{
+                ID:       "1",
+                Name:     "John Doe",
+                Age:      25,
+                Position: "Developer",
+                Salary:   50000,
+            },
+            expectedStatus: http.StatusCreated,
+        },
+        {
+            name: "Invalid age",
+            worker: model.Worker{
+                ID:       "2",
+                Name:     "Young Worker",
+                Age:      15, // Below minimum age
+                Position: "Intern",
+                Salary:   20000,
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "Invalid name length",
+            worker: model.Worker{
+                ID:       "3",
+                Name:     "A", // Too short
+                Age:      25,
+                Position: "Developer",
+                Salary:   50000,
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "Invalid salary",
+            worker: model.Worker{
+                ID:       "4",
+                Name:     "John Doe",
+                Age:      25,
+                Position: "Developer",
+                Salary:   -1000, // Negative salary
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+    }
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			workerJSON, _ := json.Marshal(tt.worker)
-			req := httptest.NewRequest(http.MethodPost, "/workers", bytes.NewReader(workerJSON))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            workerJSON, _ := json.Marshal(tt.worker)
+            req := httptest.NewRequest(http.MethodPost, "/workers", bytes.NewReader(workerJSON))
+            req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+            rec := httptest.NewRecorder()
+            c := e.NewContext(req, rec)
 
-			err := controller.CreateWorker(c)
-			if tt.expectedStatus == http.StatusCreated {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-			}
-			assert.Equal(t, tt.expectedStatus, rec.Code)
-		})
-	}
+            // Use Echo's error handling middleware to process any errors
+            if err := controller.CreateWorker(c); err != nil {
+                e.HTTPErrorHandler(err, c)
+            }
+            
+            // Now we can directly check the recorder's status code
+            assert.Equal(t, tt.expectedStatus, rec.Code)
+        })
+    }
 }
 
 func TestUpdateWorkerValidation(t *testing.T) {
-	// Setup
-	e := echo.New()
-	repo := repository.NewRepository()
-	controller := NewController(repo)
+    // Setup
+    e := echo.New()
+    // Add Echo's HTTP error handler middleware
+    e.HTTPErrorHandler = echo.New().DefaultHTTPErrorHandler
+    
+    repo := repository.NewRepository()
+    controller := NewController(repo)
 
-	// Add initial worker
-	initialWorker := model.Worker{
-		ID:       "1",
-		Name:     "John Doe",
-		Age:      25,
-		Position: "Developer",
-		Salary:   50000,
-	}
-	repo.CreateWorker(initialWorker)
+    // Add initial worker
+    initialWorker := model.Worker{
+        ID:       "1",
+        Name:     "John Doe",
+        Age:      25,
+        Position: "Developer",
+        Salary:   50000,
+    }
+    repo.CreateWorker(initialWorker)
 
-	// Test cases
-	tests := []struct {
-		name           string
-		worker         model.Worker
-		expectedStatus int
-	}{
-		{
-			name: "Valid update",
-			worker: model.Worker{
-				ID:       "1",
-				Name:     "John Updated",
-				Age:      26,
-				Position: "Senior Developer",
-				Salary:   60000,
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "Invalid age update",
-			worker: model.Worker{
-				ID:       "1",
-				Name:     "John Doe",
-				Age:      15, // Below minimum age
-				Position: "Developer",
-				Salary:   50000,
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "Invalid salary update",
-			worker: model.Worker{
-				ID:       "1",
-				Name:     "John Doe",
-				Age:      25,
-				Position: "Developer",
-				Salary:   -1000, // Negative salary
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-	}
+    // Test cases
+    tests := []struct {
+        name           string
+        worker         model.Worker
+        expectedStatus int
+    }{
+        {
+            name: "Valid update",
+            worker: model.Worker{
+                ID:       "1",
+                Name:     "John Updated",
+                Age:      26,
+                Position: "Senior Developer",
+                Salary:   60000,
+            },
+            expectedStatus: http.StatusOK,
+        },
+        {
+            name: "Invalid age update",
+            worker: model.Worker{
+                ID:       "1",
+                Name:     "John Doe",
+                Age:      15, // Below minimum age
+                Position: "Developer",
+                Salary:   50000,
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name: "Invalid salary update",
+            worker: model.Worker{
+                ID:       "1",
+                Name:     "John Doe",
+                Age:      25,
+                Position: "Developer",
+                Salary:   -1000, // Negative salary
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+    }
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			workerJSON, _ := json.Marshal(tt.worker)
-			req := httptest.NewRequest(http.MethodPatch, "/workers/1", bytes.NewReader(workerJSON))
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-			c.SetPath("/workers/:id")
-			c.SetParamNames("id")
-			c.SetParamValues("1")
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            workerJSON, _ := json.Marshal(tt.worker)
+            req := httptest.NewRequest(http.MethodPatch, "/workers/1", bytes.NewReader(workerJSON))
+            req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+            rec := httptest.NewRecorder()
+            c := e.NewContext(req, rec)
+            c.SetPath("/workers/:id")
+            c.SetParamNames("id")
+            c.SetParamValues("1")
 
-			err := controller.UpdateWorker(c)
-			if tt.expectedStatus == http.StatusOK {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-			}
-			assert.Equal(t, tt.expectedStatus, rec.Code)
-		})
-	}
+            // Use Echo's error handling middleware to process any errors
+            if err := controller.UpdateWorker(c); err != nil {
+                e.HTTPErrorHandler(err, c)
+            }
+            
+            // Now we can directly check the recorder's status code
+            assert.Equal(t, tt.expectedStatus, rec.Code)
+        })
+    }
 }
