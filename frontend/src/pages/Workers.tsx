@@ -4,7 +4,7 @@ import { WorkersDataTable } from '@/components/workers/data-table'
 export default function Workers() {
   return (
     <>
-      <PageTitle title='Workers' />
+      <PageTitle>Workers</PageTitle>
       <WorkersDataTable />
     </>
   )
