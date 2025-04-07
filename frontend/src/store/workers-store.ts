@@ -36,7 +36,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   filters: {},
   pagination: {
     page: 1,
-    pageSize: 10,
+    pageSize: 20,
     total: 0
   },
   lastFetchTime: null,
