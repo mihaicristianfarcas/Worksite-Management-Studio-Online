@@ -64,8 +64,15 @@ export function WorkersDataTable() {
   const [workerToDelete, setWorkerToDelete] = React.useState<Worker | null>(null)
 
   // Get data and methods from store
-  const { workers, isLoading, fetchWorkers, addWorker, updateWorker, deleteWorker, deleteWorkers } =
-    useWorkersStore()
+  const {
+    workers,
+    loadingState,
+    fetchWorkers,
+    addWorker,
+    updateWorker,
+    deleteWorker,
+    deleteWorkers
+  } = useWorkersStore()
 
   // Fetch workers data on mount
   React.useEffect(() => {
@@ -105,7 +112,7 @@ export function WorkersDataTable() {
     setSelectedWorker(null) // Clear selected worker after edit
   }
 
-  // Define columns directly within the component
+  // Define columns
   const columns = React.useMemo<ColumnDef<Worker>[]>(
     () => [
       {
@@ -310,7 +317,12 @@ export function WorkersDataTable() {
         />
 
         {/* Refresh button */}
-        <Button className='ml-3' variant='outline' onClick={fetchWorkers} disabled={isLoading}>
+        <Button
+          className='ml-3'
+          variant='outline'
+          onClick={() => fetchWorkers()}
+          disabled={loadingState === 'loading'}
+        >
           <RefreshCcwDot className='h-4 w-4' />
         </Button>
 
@@ -389,7 +401,7 @@ export function WorkersDataTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {loadingState === 'loading' ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className='h-24 text-center'>
                   <div className='flex h-full items-center justify-center'>Loading workers...</div>

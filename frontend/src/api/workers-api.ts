@@ -7,18 +7,85 @@ export type Worker = {
   salary: number
 }
 
+export type WorkerFilters = {
+  position?: string
+  minAge?: number
+  maxAge?: number
+  minSalary?: number
+  maxSalary?: number
+}
+
+export type PaginationParams = {
+  page: number
+  pageSize: number
+}
+
+export type PaginatedResponse<T> = {
+  data: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 // API base URL - make sure this matches backend
 const API_URL = 'http://localhost:8080/api'
 
 // Workers API service
-export const workersApi = {
-  // Fetch all workers
-  async getAll(): Promise<Worker[]> {
-    const response = await fetch(`${API_URL}/workers`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch workers')
+export const WorkersAPI = {
+  // Fetch all workers with optional filters and sorting
+  async getAll(
+    filters?: WorkerFilters,
+    pagination?: PaginationParams
+  ): Promise<PaginatedResponse<Worker>> {
+    const queryParams = new URLSearchParams()
+
+    if (filters) {
+      if (filters.position) queryParams.append('position', filters.position)
+      if (filters.minAge) queryParams.append('minAge', filters.minAge.toString())
+      if (filters.maxAge) queryParams.append('maxAge', filters.maxAge.toString())
+      if (filters.minSalary) queryParams.append('minSalary', filters.minSalary.toString())
+      if (filters.maxSalary) queryParams.append('maxSalary', filters.maxSalary.toString())
     }
-    return response.json()
+
+    // Add pagination parameters
+    if (pagination) {
+      queryParams.append('page', pagination.page.toString())
+      queryParams.append('pageSize', pagination.pageSize.toString())
+    }
+
+    const url = `${API_URL}/workers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    console.log('Fetching workers from:', url)
+
+    try {
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch workers: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log('API response:', data)
+
+      // Check if the response is already in the expected format
+      if (data.data && typeof data.total === 'number') {
+        return data
+      }
+
+      // If it's an array, convert it to the expected format
+      if (Array.isArray(data)) {
+        return {
+          data: data,
+          total: data.length,
+          page: pagination?.page || 1,
+          pageSize: pagination?.pageSize || data.length
+        }
+      }
+
+      throw new Error('Unexpected response format')
+    } catch (error) {
+      console.error('Error fetching workers:', error)
+      throw error
+    }
   },
 
   // Add a new worker

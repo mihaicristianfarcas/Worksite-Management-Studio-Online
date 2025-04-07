@@ -34,10 +34,45 @@ func NewRepository() *Repository {
 	}
 }
 
+// GetAllWorkers returns all workers without any filtering or sorting
 func (r *Repository) GetAllWorkers() ([]model.Worker, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	return r.workers, nil
+}
+
+// GetFilteredWorkers returns workers filtered according to the provided parameters
+func (r *Repository) GetFilteredWorkers(position string, minAge, maxAge, minSalary, maxSalary int) ([]model.Worker, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	// Create a copy of workers to avoid modifying the original slice
+	workers := make([]model.Worker, len(r.workers))
+	copy(workers, r.workers)
+
+	// Apply filters
+	var filteredWorkers []model.Worker
+	for _, worker := range workers {
+		if position != "" && worker.Position != position {
+			continue
+		}
+		if minAge > 0 && worker.Age < minAge {
+			continue
+		}
+		if maxAge > 0 && worker.Age > maxAge {
+			continue
+		}
+		if minSalary > 0 && worker.Salary < minSalary {
+			continue
+		}
+		if maxSalary > 0 && worker.Salary > maxSalary {
+			continue
+		}
+		// If all filters pass, add the worker to the filtered list
+		filteredWorkers = append(filteredWorkers, worker)
+	}
+
+	return filteredWorkers, nil
 }
 
 func (r *Repository) GetWorker(id string) (model.Worker, error) {

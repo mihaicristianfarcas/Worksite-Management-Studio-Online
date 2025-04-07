@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"sort"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
@@ -25,21 +24,28 @@ func NewController(repo *repository.Repository) *Controller {
 
 type FilterParams struct {
 	Position  string `query:"position"`
-	MinAge    int    `query:"min_age"`
-	MaxAge    int    `query:"max_age"`
+	MinAge    int    `query:"minAge"`
+	MaxAge    int    `query:"maxAge"`
 	MinSalary int    `query:"min_salary"`
 	MaxSalary int    `query:"max_salary"`
-	SortBy    string `query:"sort_by"`
-	SortOrder string `query:"sort_order"`
+	Page      int    `query:"page"`
+	PageSize  int    `query:"pageSize"`
+}
+
+type PaginatedResponse struct {
+	Data     []model.Worker `json:"data"`
+	Total    int           `json:"total"`
+	Page     int           `json:"page"`
+	PageSize int           `json:"pageSize"`
 }
 
 // Get all workers
 // GET /workers
-// Filter by position: ?position=Dulgher
-// Filter by age: ?min_age=25&max_age=30
+// Filter by position: ?position=Developer
+// Filter by age: ?minAge=25&maxAge=30
 // Filter by salary: ?min_salary=50000&max_salary=70000
-// Sort by field: ?sort_by=name&sort_order=asc
-// Combine filters: ?position=Dulgher&min_age=25&sort_by=salary&sort_order=desc
+// Pagination: ?page=1&pageSize=10
+// Combine filters: ?position=Developer&minAge=25&sortBy=salary&page=1&pageSize=10
 
 func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 	var params FilterParams
@@ -47,58 +53,50 @@ func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid filter parameters"})
 	}
 
-	workers, err := c.repo.GetAllWorkers()
+	// Set default values for pagination
+	if params.Page < 1 {
+		params.Page = 1
+	}
+	if params.PageSize < 1 {
+		params.PageSize = 10
+	}
+
+	// Get filtered workers
+	filteredWorkers, err := c.repo.GetFilteredWorkers(
+		params.Position,
+		params.MinAge,
+		params.MaxAge,
+		params.MinSalary,
+		params.MaxSalary,
+	)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	// Apply filters
-	var filteredWorkers []model.Worker
-	for _, worker := range workers {
-		if params.Position != "" && worker.Position != params.Position {
-			continue
-		}
-		if params.MinAge > 0 && worker.Age < params.MinAge {
-			continue
-		}
-		if params.MaxAge > 0 && worker.Age > params.MaxAge {
-			continue
-		}
-		if params.MinSalary > 0 && worker.Salary < params.MinSalary {
-			continue
-		}
-		if params.MaxSalary > 0 && worker.Salary > params.MaxSalary {
-			continue
-		}
-		filteredWorkers = append(filteredWorkers, worker)
+	// Apply pagination
+	total := len(filteredWorkers)
+	start := (params.Page - 1) * params.PageSize
+	end := start + params.PageSize
+	if start >= total {
+		start = 0
+		end = 0
+	} else if end > total {
+		end = total
 	}
 
-	// Apply sorting
-	if params.SortBy != "" {
-		sort.Slice(filteredWorkers, func(i, j int) bool {
-			switch params.SortBy {
-			case "name":
-				if params.SortOrder == "desc" {
-					return filteredWorkers[i].Name > filteredWorkers[j].Name
-				}
-				return filteredWorkers[i].Name < filteredWorkers[j].Name
-			case "age":
-				if params.SortOrder == "desc" {
-					return filteredWorkers[i].Age > filteredWorkers[j].Age
-				}
-				return filteredWorkers[i].Age < filteredWorkers[j].Age
-			case "salary":
-				if params.SortOrder == "desc" {
-					return filteredWorkers[i].Salary > filteredWorkers[j].Salary
-				}
-				return filteredWorkers[i].Salary < filteredWorkers[j].Salary
-			default:
-				return false
-			}
-		})
+	var paginatedWorkers []model.Worker
+	if start < end {
+		paginatedWorkers = filteredWorkers[start:end]
 	}
 
-	return ctx.JSON(http.StatusOK, filteredWorkers)
+	response := PaginatedResponse{
+		Data:     paginatedWorkers,
+		Total:    total,
+		Page:     params.Page,
+		PageSize: params.PageSize,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) GetWorker(ctx echo.Context) error {
