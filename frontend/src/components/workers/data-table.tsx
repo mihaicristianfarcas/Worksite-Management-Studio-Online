@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {
+  ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
@@ -10,12 +11,16 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { ChevronDown, Plus, RefreshCcwDot } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -38,7 +43,6 @@ import {
 } from '@/components/ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
 import { Worker } from '@/api/workers-api'
-import { getWorkerColumns } from './columns'
 import { useWorkersStore } from '@/store/workers-store'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
@@ -101,10 +105,153 @@ export function WorkersDataTable() {
     setSelectedWorker(null) // Clear selected worker after edit
   }
 
-  // Set up columns
-  const columns = React.useMemo(
-    () => getWorkerColumns(setSelectedWorker, handleDeleteWorkerClick),
-    [setSelectedWorker]
+  // Define columns directly within the component
+  const columns = React.useMemo<ColumnDef<Worker>[]>(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <div className='flex justify-center'>
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && 'indeterminate')
+              }
+              onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+              aria-label='Select all'
+            />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className='flex justify-center'>
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={value => row.toggleSelected(!!value)}
+              aria-label='Select row'
+            />
+          </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 50 // Fixed width for checkbox column
+      },
+      {
+        accessorKey: 'name',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant='ghost'
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className='w-full justify-center px-4'
+            >
+              Name
+              <ArrowUpDown className='ml-2 h-4 w-4' />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <div className='px-4 text-center capitalize'>{row.getValue('name')}</div>
+        ),
+        size: 200 // Fixed width for name column
+      },
+      {
+        accessorKey: 'age',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant='ghost'
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className='w-full justify-center px-4'
+            >
+              Age
+              <ArrowUpDown className='ml-2 h-4 w-4' />
+            </Button>
+          )
+        },
+        cell: ({ row }) => <div className='px-4 text-center'>{row.getValue('age')}</div>,
+        size: 100 // Fixed width for age column
+      },
+      {
+        accessorKey: 'position',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant='ghost'
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className='w-full justify-center px-4'
+            >
+              Position
+              <ArrowUpDown className='ml-2 h-4 w-4' />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <div className='px-4 text-center capitalize'>{row.getValue('position')}</div>
+        ),
+        size: 200 // Fixed width for position column
+      },
+      {
+        accessorKey: 'salary',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant='ghost'
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className='w-full justify-center px-4'
+            >
+              Salary
+              <ArrowUpDown className='ml-2 h-4 w-4' />
+            </Button>
+          )
+        },
+        cell: ({ row }) => {
+          const amount = parseFloat(row.getValue('salary'))
+
+          // Format the amount as a RON amount
+          const formatted = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'RON'
+          }).format(amount)
+
+          return <div className='px-4 text-center font-medium'>{formatted}</div>
+        },
+        size: 150 // Fixed width for salary column
+      },
+      {
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const worker = row.original as Worker
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='ghost' className='h-8 w-8 p-0'>
+                  <span className='sr-only'>Open menu</span>
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(worker.id)}>
+                  Copy worker ID
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSelectedWorker(worker)}>Edit</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDeleteWorkerClick(worker)}
+                  className='text-red-600'
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+        size: 80 // Fixed width for actions column
+      }
+    ],
+    []
   )
 
   // Create table instance
