@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"strings"
 	"sync"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
@@ -93,7 +94,7 @@ func (r *Repository) GetAllWorkers() ([]model.Worker, error) {
 }
 
 // GetFilteredWorkers returns workers filtered according to the provided parameters
-func (r *Repository) GetFilteredWorkers(position string, minAge, maxAge, minSalary, maxSalary int) ([]model.Worker, error) {
+func (r *Repository) GetFilteredWorkers(position string, minAge, maxAge, minSalary, maxSalary int, search string) ([]model.Worker, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
@@ -118,6 +119,16 @@ func (r *Repository) GetFilteredWorkers(position string, minAge, maxAge, minSala
 		}
 		if maxSalary > 0 && worker.Salary > maxSalary {
 			continue
+		}
+		// Apply search filter if provided
+		if search != "" {
+			// Case-insensitive search in name and position
+			searchLower := strings.ToLower(search)
+			nameMatch := strings.Contains(strings.ToLower(worker.Name), searchLower)
+			positionMatch := strings.Contains(strings.ToLower(worker.Position), searchLower)
+			if !nameMatch && !positionMatch {
+				continue
+			}
 		}
 		// If all filters pass, add the worker to the filtered list
 		filteredWorkers = append(filteredWorkers, worker)

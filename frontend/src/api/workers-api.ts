@@ -15,6 +15,7 @@ export type WorkerFilters = {
   maxSalary?: number
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
+  search?: string
 }
 
 export type PaginationParams = {
@@ -49,6 +50,7 @@ export const WorkersAPI = {
       if (filters.maxSalary) queryParams.append('max_salary', filters.maxSalary.toString())
       if (filters.sortBy) queryParams.append('sort_by', filters.sortBy)
       if (filters.sortOrder) queryParams.append('sort_order', filters.sortOrder)
+      if (filters.search) queryParams.append('search', filters.search)
     }
 
     // Add pagination parameters

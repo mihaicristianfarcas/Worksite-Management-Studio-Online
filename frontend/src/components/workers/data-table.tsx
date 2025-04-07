@@ -1,18 +1,47 @@
 import * as React from 'react'
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
-  useReactTable
+  useReactTable,
+  ColumnDef,
+  SortingState,
+  Row,
+  Table as TableInstance,
+  Column
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronDown, Filter, MoreHorizontal, Plus, RefreshCcwDot } from 'lucide-react'
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  RefreshCcwDot,
+  Search
+} from 'lucide-react'
+
+// UI Components
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,50 +51,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+
+// Worker-specific components
 import AddWorkerForm from '@/components/workers/add-form'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
 import EditWorkerForm from '@/components/workers/edit-form'
+
+// API and store
 import { Worker, WorkerFilters } from '@/api/workers-api'
 import { useWorkersStore } from '@/store/workers-store'
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export function WorkersDataTable() {
-  // State for table
+  // Table state
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
+  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [globalFilter, setGlobalFilter] = React.useState('')
+  const [filters, setFilters] = React.useState<WorkerFilters>({})
+  const [tempFilters, setTempFilters] = React.useState<WorkerFilters>({})
+  const [searchTerm, setSearchTerm] = React.useState('')
 
-  // Dialog states
+  // UI state
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
   const [selectedWorker, setSelectedWorker] = React.useState<Worker | null>(null)
-
-  // Confirmation dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = React.useState(false)
   const [workerToDelete, setWorkerToDelete] = React.useState<Worker | null>(null)
-
-  // Filter states
-  const [filters, setFilters] = React.useState<WorkerFilters>({})
   const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false)
 
   // Get data and methods from store
@@ -81,190 +93,118 @@ export function WorkersDataTable() {
     setFilters: setStoreFilters
   } = useWorkersStore()
 
-  // Fetch workers data on mount
+  // Fetch workers on mount and when dependencies change
   React.useEffect(() => {
     fetchWorkers(filters, pagination.page, pagination.pageSize)
   }, [fetchWorkers, filters, pagination.page, pagination.pageSize])
 
-  // Handle opening delete confirmation for a single worker
-  const handleDeleteWorkerClick = (worker: Worker) => {
-    setWorkerToDelete(worker)
-    setDeleteConfirmOpen(true)
-  }
-
-  // Handle actual deletion after confirmation
-  const confirmDeleteWorker = () => {
-    if (workerToDelete) {
-      deleteWorker(workerToDelete.id)
-      fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
-    }
-  }
-
-  // Handle confirming multiple deletions
-  const confirmDeleteMultiple = () => {
-    const selectedRows = table.getFilteredSelectedRowModel().rows
-    const selectedIds = selectedRows.map(row => row.original.id)
-    deleteWorkers(selectedIds)
-    setRowSelection({}) // Clear selection after delete
-    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
-  }
-
-  // Handle adding new worker
-  const handleAddWorker = async (worker: Worker) => {
-    await addWorker(worker)
-    setAddDialogOpen(false)
-    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
-  }
-
-  // Handle editing worker
-  const handleEditWorker = async (updatedWorker: Worker) => {
-    await updateWorker(updatedWorker)
-    setSelectedWorker(null) // Clear selected worker after edit
-    fetchWorkers(filters, pagination.page, pagination.pageSize) // Refresh data
-  }
-
-  // Handle filter changes
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    const updatedFilters = {
-      ...filters,
-      [name]:
-        value === ''
-          ? undefined
-          : name.includes('Age') || name.includes('Salary')
-            ? Number(value)
-            : value
-    }
-
-    setFilters(updatedFilters)
-    setStoreFilters(updatedFilters)
-  }
-
-  // Reset filters
-  const resetFilters = () => {
-    setFilters({})
-    setStoreFilters({})
-    setFilterPopoverOpen(false)
-    fetchWorkers({}, pagination.page, pagination.pageSize) // Fetch all workers
-  }
-
-  // Define columns
+  // Define table columns
   const columns = React.useMemo<ColumnDef<Worker>[]>(
     () => [
       {
         id: 'select',
-        header: ({ table }) => (
-          <div className='flex justify-center'>
-            <Checkbox
-              checked={
-                table.getIsAllPageRowsSelected() ||
-                (table.getIsSomePageRowsSelected() && 'indeterminate')
-              }
-              onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-              aria-label='Select all'
-            />
-          </div>
+        header: ({ table }: { table: TableInstance<Worker> }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+            aria-label='Select all'
+            className='mx-auto'
+          />
         ),
-        cell: ({ row }) => (
-          <div className='flex justify-center'>
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={value => row.toggleSelected(!!value)}
-              aria-label='Select row'
-            />
-          </div>
+        cell: ({ row }: { row: Row<Worker> }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={value => row.toggleSelected(!!value)}
+            aria-label='Select row'
+            className='mx-auto'
+          />
         ),
         enableSorting: false,
         enableHiding: false,
-        size: 50 // Fixed width for checkbox column
+        size: 50
       },
       {
         accessorKey: 'name',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant='ghost'
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className='w-full justify-center px-4'
-            >
-              Name
-              <ArrowUpDown className='ml-2 h-4 w-4' />
-            </Button>
-          )
-        },
-        cell: ({ row }) => (
-          <div className='px-4 text-center capitalize'>{row.getValue('name')}</div>
+        header: ({ column }: { column: Column<Worker> }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='w-full justify-center'
+          >
+            Name
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
         ),
-        size: 200 // Fixed width for name column
+        cell: ({ row }: { row: Row<Worker> }) => (
+          <div className='text-center capitalize'>{row.getValue('name')}</div>
+        ),
+        size: 200
       },
       {
         accessorKey: 'age',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant='ghost'
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className='w-full justify-center px-4'
-            >
-              Age
-              <ArrowUpDown className='ml-2 h-4 w-4' />
-            </Button>
-          )
-        },
-        cell: ({ row }) => <div className='px-4 text-center'>{row.getValue('age')}</div>,
-        size: 100 // Fixed width for age column
+        header: ({ column }: { column: Column<Worker> }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='w-full justify-center'
+          >
+            Age
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        ),
+        cell: ({ row }: { row: Row<Worker> }) => (
+          <div className='text-center'>{row.getValue('age')}</div>
+        ),
+        size: 100
       },
       {
         accessorKey: 'position',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant='ghost'
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className='w-full justify-center px-4'
-            >
-              Position
-              <ArrowUpDown className='ml-2 h-4 w-4' />
-            </Button>
-          )
-        },
-        cell: ({ row }) => (
-          <div className='px-4 text-center capitalize'>{row.getValue('position')}</div>
+        header: ({ column }: { column: Column<Worker> }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='w-full justify-center'
+          >
+            Position
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
         ),
-        size: 200 // Fixed width for position column
+        cell: ({ row }: { row: Row<Worker> }) => (
+          <div className='text-center capitalize'>{row.getValue('position')}</div>
+        ),
+        size: 200
       },
       {
         accessorKey: 'salary',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant='ghost'
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className='w-full justify-center px-4'
-            >
-              Salary
-              <ArrowUpDown className='ml-2 h-4 w-4' />
-            </Button>
-          )
-        },
-        cell: ({ row }) => {
+        header: ({ column }: { column: Column<Worker> }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='w-full justify-center'
+          >
+            Salary
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        ),
+        cell: ({ row }: { row: Row<Worker> }) => {
           const amount = parseFloat(row.getValue('salary'))
-
-          // Format the amount as a RON amount
           const formatted = new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'RON'
           }).format(amount)
 
-          return <div className='px-4 text-center font-medium'>{formatted}</div>
+          return <div className='text-center font-medium'>{formatted}</div>
         },
-        size: 150 // Fixed width for salary column
+        size: 150
       },
       {
         id: 'actions',
         enableHiding: false,
-        cell: ({ row }) => {
-          const worker = row.original as Worker
+        cell: ({ row }: { row: Row<Worker> }) => {
+          const worker = row.original
 
           return (
             <DropdownMenu>
@@ -282,7 +222,7 @@ export function WorkersDataTable() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setSelectedWorker(worker)}>Edit</DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleDeleteWorkerClick(worker)}
+                  onClick={() => handleDeleteWorker(worker)}
                   className='text-red-600'
                 >
                   Delete
@@ -291,7 +231,7 @@ export function WorkersDataTable() {
             </DropdownMenu>
           )
         },
-        size: 80 // Fixed width for actions column
+        size: 80
       }
     ],
     []
@@ -301,57 +241,170 @@ export function WorkersDataTable() {
   const table = useReactTable({
     data: workers,
     columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
-
-    // Custom global filter function that searches across all fields
     globalFilterFn: (row, columnId, filterValue) => {
       const search = filterValue.toLowerCase()
-
-      // Check all accessible values in the row
       return Object.values(row.original).some(value => {
-        // Handle nested objects and arrays
         if (typeof value === 'object' && value !== null) {
           return Object.values(value).some(nestedValue =>
             String(nestedValue).toLowerCase().includes(search)
           )
         }
-
-        // Handle primitive values
         return String(value).toLowerCase().includes(search)
       })
     },
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
       globalFilter
     }
   })
 
-  // Handle pagination
-  const handlePageChange = (newPage: number) => {
-    fetchWorkers(filters, newPage, pagination.pageSize)
+  // Simplified handler functions
+  const handleDeleteWorker = (worker: Worker) => {
+    setWorkerToDelete(worker)
+    setDeleteConfirmOpen(true)
   }
+
+  const handleConfirmDelete = () => {
+    if (workerToDelete) {
+      deleteWorker(workerToDelete.id)
+      refreshTable()
+    }
+    setDeleteConfirmOpen(false)
+  }
+
+  const handleDeleteMultiple = () => {
+    const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id)
+    deleteWorkers(selectedIds)
+    setRowSelection({})
+    refreshTable(1)
+    setDeleteMultipleConfirmOpen(false)
+  }
+
+  const handleAddWorker = async (worker: Worker) => {
+    await addWorker(worker)
+    setAddDialogOpen(false)
+    refreshTable(1)
+  }
+
+  const handleEditWorker = async (worker: Worker) => {
+    await updateWorker(worker)
+    setSelectedWorker(null)
+    refreshTable()
+  }
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    const updatedFilters = {
+      ...tempFilters,
+      [name]:
+        value === ''
+          ? undefined
+          : name.includes('Age') || name.includes('Salary')
+            ? Number(value)
+            : value
+    }
+
+    setTempFilters(updatedFilters)
+  }
+
+  const handleApplyFilters = () => {
+    updateFilters(tempFilters)
+    setFilterPopoverOpen(false)
+    refreshTable(1)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+  }
+
+  const handleSearch = () => {
+    const updatedFilters = searchTerm.trim()
+      ? { ...filters, search: searchTerm.trim() }
+      : { ...filters }
+
+    if (!searchTerm.trim()) delete updatedFilters.search
+
+    updateFilters(updatedFilters)
+    refreshTable(1)
+  }
+
+  // Helper functions
+  const updateFilters = (updatedFilters: WorkerFilters) => {
+    setFilters(updatedFilters)
+    setStoreFilters(updatedFilters)
+  }
+
+  const resetFilters = () => {
+    setTempFilters({})
+    updateFilters({})
+    setFilterPopoverOpen(false)
+    refreshTable(1)
+  }
+
+  const refreshTable = (page = pagination.page) => {
+    fetchWorkers(filters, page, pagination.pageSize)
+  }
+
+  // Filter fields for popover
+  const filterFields = [
+    { id: 'minAge', label: 'Min Age', type: 'number' },
+    { id: 'maxAge', label: 'Max Age', type: 'number' },
+    { id: 'minSalary', label: 'Min Salary', type: 'number' },
+    { id: 'maxSalary', label: 'Max Salary', type: 'number' },
+    { id: 'position', label: 'Position', type: 'text' }
+  ]
 
   return (
     <>
+      {/* Toolbar */}
       <div className='flex items-center py-4'>
-        <Input
-          placeholder='Search workers...'
-          value={globalFilter}
-          onChange={event => setGlobalFilter(event.target.value)}
-          className='max-w-sm'
-        />
+        {/* Search */}
+        <div className='flex max-w-sm items-center'>
+          <Input
+            placeholder='Search workers...'
+            value={searchTerm}
+            onChange={e => handleSearchChange(e.target.value)}
+            className='rounded-r-none'
+          />
+          <Button variant='outline' className='rounded-l-none border-l-0' onClick={handleSearch}>
+            <Search className='h-4 w-4' />
+          </Button>
+        </div>
 
-        {/* Filter popover */}
+        {/* Refresh button */}
+        <Button
+          className='ml-3'
+          variant='outline'
+          onClick={() => {
+            resetFilters()
+            setSearchTerm('')
+            setRowSelection({})
+            setGlobalFilter('')
+            setSorting([])
+            setColumnVisibility({})
+            setFilters({})
+            setTempFilters({})
+            setStoreFilters({})
+            setFilterPopoverOpen(false)
+            refreshTable(1)
+          }}
+          disabled={loadingState === 'loading'}
+        >
+          <RefreshCcwDot className='h-4 w-4' />
+        </Button>
+
+        {/* Filter Button */}
         <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
           <PopoverTrigger asChild>
             <Button className='ml-3' variant='outline'>
@@ -368,83 +421,34 @@ export function WorkersDataTable() {
                 </p>
               </div>
               <div className='grid gap-2'>
-                <div className='grid grid-cols-3 items-center gap-4'>
-                  <Label htmlFor='minAge'>Minimum Age</Label>
-                  <Input
-                    id='minAge'
-                    name='minAge'
-                    type='number'
-                    className='col-span-2'
-                    value={filters.minAge || ''}
-                    onChange={handleFilterChange}
-                  />
-                </div>
-                <div className='grid grid-cols-3 items-center gap-4'>
-                  <Label htmlFor='maxAge'>Maximum Age</Label>
-                  <Input
-                    id='maxAge'
-                    name='maxAge'
-                    type='number'
-                    className='col-span-2'
-                    value={filters.maxAge || ''}
-                    onChange={handleFilterChange}
-                  />
-                </div>
-                <div className='grid grid-cols-3 items-center gap-4'>
-                  <Label htmlFor='minSalary'>Minimum Salary</Label>
-                  <Input
-                    id='minSalary'
-                    name='minSalary'
-                    type='number'
-                    className='col-span-2'
-                    value={filters.minSalary || ''}
-                    onChange={handleFilterChange}
-                  />
-                </div>
-                <div className='grid grid-cols-3 items-center gap-4'>
-                  <Label htmlFor='maxSalary'>Maximum Salary</Label>
-                  <Input
-                    id='maxSalary'
-                    name='maxSalary'
-                    type='number'
-                    className='col-span-2'
-                    value={filters.maxSalary || ''}
-                    onChange={handleFilterChange}
-                  />
-                </div>
-                <div className='grid grid-cols-3 items-center gap-4'>
-                  <Label htmlFor='position'>Position</Label>
-                  <Input
-                    id='position'
-                    name='position'
-                    type='text'
-                    className='col-span-2'
-                    value={filters.position || ''}
-                    onChange={handleFilterChange}
-                  />
-                </div>
+                {filterFields.map(field => (
+                  <div key={field.id} className='grid grid-cols-3 items-center gap-4'>
+                    <Label htmlFor={field.id}>{field.label}</Label>
+                    <Input
+                      id={field.id}
+                      name={field.id}
+                      type={field.type}
+                      className='col-span-2'
+                      value={tempFilters[field.id as keyof WorkerFilters] || ''}
+                      onChange={handleFilterChange}
+                    />
+                  </div>
+                ))}
               </div>
-              <Button variant='outline' onClick={resetFilters}>
-                Reset
-              </Button>
+              <div className='flex justify-between'>
+                <Button variant='outline' onClick={resetFilters}>
+                  Reset Filters
+                </Button>
+                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
 
-        {/* Refresh button */}
-        <Button
-          className='ml-3'
-          variant='outline'
-          onClick={() => fetchWorkers(filters, pagination.page, pagination.pageSize)}
-          disabled={loadingState === 'loading'}
-        >
-          <RefreshCcwDot className='h-4 w-4' />
-        </Button>
-
-        {/* Add workers dialog */}
+        {/* Add worker dialog trigger */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='mx-3' variant='outline'>
+            <Button className='ml-3' variant='outline'>
               <Plus className='mr-2 h-4 w-4' />
               Add Worker
             </Button>
@@ -458,17 +462,17 @@ export function WorkersDataTable() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete workers button - show when rows are selected */}
+        {/* Delete selected button */}
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
           <Button
             className='ml-3 bg-red-600 hover:bg-red-700'
-            variant='outline'
             onClick={() => setDeleteMultipleConfirmOpen(true)}
           >
             Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
           </Button>
         )}
 
+        {/* Column visibility dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant='outline' className='ml-auto'>
@@ -479,39 +483,37 @@ export function WorkersDataTable() {
             {table
               .getAllColumns()
               .filter(column => column.getCanHide())
-              .map(column => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className='capitalize'
-                    checked={column.getIsVisible()}
-                    onCheckedChange={value => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
+              .map(column => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  className='capitalize'
+                  checked={column.getIsVisible()}
+                  onCheckedChange={value => column.toggleVisibility(!!value)}
+                >
+                  {column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Table */}
       <div className='rounded-md border'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className='py-1.5 text-center'
-                      style={{ width: `${header.column.getSize()}px` }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  )
-                })}
+                {headerGroup.headers.map(header => (
+                  <TableHead
+                    key={header.id}
+                    className='text-center'
+                    style={{ width: `${header.column.getSize()}px` }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -520,11 +522,7 @@ export function WorkersDataTable() {
               table.getRowModel().rows.map(row => (
                 <TableRow key={row.id} className='hover:bg-muted/30'>
                   {row.getVisibleCells().map(cell => (
-                    <TableCell
-                      key={cell.id}
-                      className='py-3 text-center'
-                      style={{ width: `${cell.column.getSize()}px` }}
-                    >
+                    <TableCell key={cell.id} style={{ width: `${cell.column.getSize()}px` }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -533,44 +531,46 @@ export function WorkersDataTable() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className='h-24 text-center'>
-                  <div className='flex h-full items-center justify-center'>No results.</div>
+                  No results found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
       <div className='flex items-center justify-end space-x-2 py-4'>
         <div className='text-muted-foreground flex-1 text-sm'>
           {table.getFilteredSelectedRowModel().rows.length} of {pagination.total} row(s) selected.
         </div>
-        <div className='space-x-2'>
+        <div className='flex items-center space-x-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => refreshTable(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+          >
+            Previous
+          </Button>
           <span className='text-muted-foreground text-sm'>
             Page {pagination.page} of {Math.ceil(pagination.total / pagination.pageSize)}
           </span>
           <Button
             variant='outline'
             size='sm'
-            onClick={() => {
-              handlePageChange(pagination.page - 1)
-            }}
-            disabled={pagination.page <= 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => {
-              handlePageChange(pagination.page + 1)
-            }}
+            onClick={() => refreshTable(pagination.page + 1)}
             disabled={pagination.page * pagination.pageSize >= pagination.total}
           >
             Next
           </Button>
+          <span className='text-muted-foreground ml-2 text-sm'>
+            Showing {workers.length} of {pagination.total} workers
+          </span>
         </div>
       </div>
 
+      {/* Dialogs */}
       {/* Edit worker dialog */}
       <Dialog open={!!selectedWorker} onOpenChange={open => !open && setSelectedWorker(null)}>
         <DialogContent>
@@ -584,22 +584,21 @@ export function WorkersDataTable() {
         </DialogContent>
       </Dialog>
 
-      {/* Single worker delete confirmation */}
+      {/* Delete confirmations */}
       <ConfirmationDialog
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={confirmDeleteWorker}
+        onConfirm={handleConfirmDelete}
         title='Delete worker'
         description={`Are you sure you want to delete ${workerToDelete?.name}? This action cannot be undone.`}
         confirmText='Delete'
         variant='destructive'
       />
 
-      {/* Multiple workers delete confirmation */}
       <ConfirmationDialog
         isOpen={deleteMultipleConfirmOpen}
         onClose={() => setDeleteMultipleConfirmOpen(false)}
-        onConfirm={confirmDeleteMultiple}
+        onConfirm={handleDeleteMultiple}
         title='Delete multiple workers'
         description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} workers? This action cannot be undone.`}
         confirmText='Delete All'

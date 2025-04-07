@@ -33,6 +33,7 @@ type FilterParams struct {
 	SortOrder string `query:"sort_order"` // "asc" or "desc"
 	Page      int    `query:"page"`
 	PageSize  int    `query:"pageSize"`
+	Search    string `query:"search"`
 }
 
 type PaginatedResponse struct {
@@ -51,7 +52,8 @@ type PaginatedResponse struct {
 // Sort by age: ?sort_by=age&sort_order=desc
 // Sort by salary: ?sort_by=salary&sort_order=asc
 // Pagination: ?page=1&pageSize=10
-// Combine filters: ?position=Developer&min_age=25&sort_by=salary&page=1&pageSize=10
+// Search: ?search=john
+// Combine filters: ?position=Developer&min_age=25&sort_by=salary&page=1&pageSize=10&search=john
 
 func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 	var params FilterParams
@@ -74,6 +76,7 @@ func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 		params.MaxAge,
 		params.MinSalary,
 		params.MaxSalary,
+		params.Search,
 	)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
