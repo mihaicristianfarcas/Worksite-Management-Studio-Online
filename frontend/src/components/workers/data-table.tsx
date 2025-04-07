@@ -334,8 +334,8 @@ export function WorkersDataTable() {
         {/* Delete workers button - show when rows are selected */}
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
           <Button
-            className='ml-3'
-            variant='destructive'
+            className='ml-3 bg-red-600 hover:bg-red-700'
+            variant='outline'
             onClick={() => setDeleteMultipleConfirmOpen(true)}
           >
             Delete Selected ({table.getFilteredSelectedRowModel().rows.length})

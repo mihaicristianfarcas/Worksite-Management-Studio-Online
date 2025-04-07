@@ -7,6 +7,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from './button'
+import { cn } from '@/lib/utils'
 
 interface ConfirmationDialogProps {
   isOpen: boolean
@@ -42,7 +43,10 @@ export function ConfirmationDialog({
         <DialogFooter>
           <Button
             onClick={handleConfirm}
-            className={variant === 'destructive' ? 'bg-red-500 hover:bg-red-600' : ''}
+            className={cn(
+              'text-foreground',
+              variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''
+            )}
           >
             {confirmText}
           </Button>
