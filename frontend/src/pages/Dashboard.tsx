@@ -5,7 +5,7 @@ import { WorkersSalaryPieChart } from '@/components/workers/salary-pie-chart'
 export default function Dashboard() {
   return (
     <>
-      <PageTitle title='Dashboard' />
+      <PageTitle>Dashboard</PageTitle>
       <section className='grid grid-cols-2 gap-4 lg:grid-cols-3'>
         <WorkersSalaryPieChart />
         <WorkersAgeBarChart />
