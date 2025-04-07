@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
 	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
 )
 
 func setupTestRepository() *repository.Repository {
@@ -263,5 +265,234 @@ func TestDeleteWorker(t *testing.T) {
 	
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("Expected status code %d, got %d", http.StatusNotFound, rec.Code)
+	}
+}
+
+func TestGetAllWorkersWithFilters(t *testing.T) {
+	// Setup
+	e := echo.New()
+	repo := repository.NewRepository()
+	controller := NewController(repo)
+
+	// Add test workers
+	workers := []model.Worker{
+		{ID: "1", Name: "John", Age: 25, Position: "Developer", Salary: 50000},
+		{ID: "2", Name: "Jane", Age: 30, Position: "Manager", Salary: 70000},
+		{ID: "3", Name: "Bob", Age: 35, Position: "Developer", Salary: 60000},
+	}
+	for _, w := range workers {
+		repo.CreateWorker(w)
+	}
+
+	// Test cases
+	tests := []struct {
+		name           string
+		query          string
+		expectedCount  int
+		expectedStatus int
+	}{
+		{
+			name:           "Filter by position",
+			query:          "?position=Developer",
+			expectedCount:  2,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Filter by age range",
+			query:          "?min_age=25&max_age=30",
+			expectedCount:  2,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Filter by salary range",
+			query:          "?min_salary=55000&max_salary=65000",
+			expectedCount:  1,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Sort by name ascending",
+			query:          "?sort_by=name&sort_order=asc",
+			expectedCount:  3,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Sort by salary descending",
+			query:          "?sort_by=salary&sort_order=desc",
+			expectedCount:  3,
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/workers"+tt.query, nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			err := controller.GetAllWorkers(c)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			var response []model.Worker
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			assert.Len(t, response, tt.expectedCount)
+		})
+	}
+}
+
+func TestCreateWorkerValidation(t *testing.T) {
+	// Setup
+	e := echo.New()
+	repo := repository.NewRepository()
+	controller := NewController(repo)
+
+	// Test cases
+	tests := []struct {
+		name           string
+		worker         model.Worker
+		expectedStatus int
+	}{
+		{
+			name: "Valid worker",
+			worker: model.Worker{
+				ID:       "1",
+				Name:     "John Doe",
+				Age:      25,
+				Position: "Developer",
+				Salary:   50000,
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name: "Invalid age",
+			worker: model.Worker{
+				ID:       "2",
+				Name:     "Young Worker",
+				Age:      15, // Below minimum age
+				Position: "Intern",
+				Salary:   20000,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid name length",
+			worker: model.Worker{
+				ID:       "3",
+				Name:     "A", // Too short
+				Age:      25,
+				Position: "Developer",
+				Salary:   50000,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid salary",
+			worker: model.Worker{
+				ID:       "4",
+				Name:     "John Doe",
+				Age:      25,
+				Position: "Developer",
+				Salary:   -1000, // Negative salary
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workerJSON, _ := json.Marshal(tt.worker)
+			req := httptest.NewRequest(http.MethodPost, "/workers", bytes.NewReader(workerJSON))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			err := controller.CreateWorker(c)
+			if tt.expectedStatus == http.StatusCreated {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
+	}
+}
+
+func TestUpdateWorkerValidation(t *testing.T) {
+	// Setup
+	e := echo.New()
+	repo := repository.NewRepository()
+	controller := NewController(repo)
+
+	// Add initial worker
+	initialWorker := model.Worker{
+		ID:       "1",
+		Name:     "John Doe",
+		Age:      25,
+		Position: "Developer",
+		Salary:   50000,
+	}
+	repo.CreateWorker(initialWorker)
+
+	// Test cases
+	tests := []struct {
+		name           string
+		worker         model.Worker
+		expectedStatus int
+	}{
+		{
+			name: "Valid update",
+			worker: model.Worker{
+				ID:       "1",
+				Name:     "John Updated",
+				Age:      26,
+				Position: "Senior Developer",
+				Salary:   60000,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Invalid age update",
+			worker: model.Worker{
+				ID:       "1",
+				Name:     "John Doe",
+				Age:      15, // Below minimum age
+				Position: "Developer",
+				Salary:   50000,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid salary update",
+			worker: model.Worker{
+				ID:       "1",
+				Name:     "John Doe",
+				Age:      25,
+				Position: "Developer",
+				Salary:   -1000, // Negative salary
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workerJSON, _ := json.Marshal(tt.worker)
+			req := httptest.NewRequest(http.MethodPatch, "/workers/1", bytes.NewReader(workerJSON))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/workers/:id")
+			c.SetParamNames("id")
+			c.SetParamValues("1")
+
+			err := controller.UpdateWorker(c)
+			if tt.expectedStatus == http.StatusOK {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+		})
 	}
 }
