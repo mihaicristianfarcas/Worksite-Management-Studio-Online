@@ -36,7 +36,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   filters: {},
   pagination: {
     page: 1,
-    pageSize: 20,
+    pageSize: 10,
     total: 0
   },
   lastFetchTime: null,
@@ -59,7 +59,9 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       currentState.lastFetchTime &&
       currentTime - currentState.lastFetchTime < currentState.cacheTimeout &&
       currentState.loadingState === 'success' &&
-      JSON.stringify(currentState.filters) === JSON.stringify(filters || {})
+      JSON.stringify(currentState.filters) === JSON.stringify(filters || {}) &&
+      currentState.pagination.page === (page || currentState.pagination.page) &&
+      currentState.pagination.pageSize === (pageSize || currentState.pagination.pageSize)
     ) {
       return currentState.workers
     }
@@ -82,7 +84,6 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
         loadingState: 'success',
         filters: filters || {},
         pagination: {
-          ...currentState.pagination,
           page: paginationParams.page,
           pageSize: paginationParams.pageSize,
           total: result.total

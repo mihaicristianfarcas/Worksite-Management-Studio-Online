@@ -55,6 +55,10 @@ export const WorkersAPI = {
     if (pagination) {
       queryParams.append('page', pagination.page.toString())
       queryParams.append('pageSize', pagination.pageSize.toString())
+    } else {
+      // Default pagination if not provided
+      queryParams.append('page', '1')
+      queryParams.append('pageSize', '10')
     }
 
     const url = `${API_URL}/workers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
@@ -85,7 +89,7 @@ export const WorkersAPI = {
         }
       }
 
-      throw new Error('Unexpected response format')
+      throw new Error('No results.')
     } catch (error) {
       console.error('Error fetching workers:', error)
       throw error
