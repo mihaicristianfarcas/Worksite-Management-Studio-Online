@@ -36,10 +36,7 @@ const API_URL = 'http://localhost:8080/api'
 // Workers API service
 export const WorkersAPI = {
   // Fetch all workers with optional filters and sorting
-  async getAll(
-    filters?: WorkerFilters,
-    pagination?: PaginationParams
-  ): Promise<PaginatedResponse<Worker>> {
+  async getAll(filters?: WorkerFilters): Promise<Worker[]> {
     const queryParams = new URLSearchParams()
 
     if (filters) {
@@ -51,16 +48,6 @@ export const WorkersAPI = {
       if (filters.sortBy) queryParams.append('sort_by', filters.sortBy)
       if (filters.sortOrder) queryParams.append('sort_order', filters.sortOrder)
       if (filters.search) queryParams.append('search', filters.search)
-    }
-
-    // Add pagination parameters
-    if (pagination) {
-      queryParams.append('page', pagination.page.toString())
-      queryParams.append('pageSize', pagination.pageSize.toString())
-    } else {
-      // Default pagination if not provided
-      queryParams.append('page', '1')
-      queryParams.append('pageSize', '10')
     }
 
     const url = `${API_URL}/workers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
@@ -76,22 +63,12 @@ export const WorkersAPI = {
       const data = await response.json()
       console.log('API response:', data)
 
-      // Check if the response is already in the expected format
-      if (data.data && typeof data.total === 'number') {
+      // Check if the response is an array
+      if (Array.isArray(data)) {
         return data
       }
 
-      // If it's an array, convert it to the expected format
-      if (Array.isArray(data)) {
-        return {
-          data: data,
-          total: data.length,
-          page: pagination?.page || 1,
-          pageSize: pagination?.pageSize || data.length
-        }
-      }
-
-      throw new Error('No results.')
+      throw new Error('Invalid response format')
     } catch (error) {
       console.error('Error fetching workers:', error)
       throw error

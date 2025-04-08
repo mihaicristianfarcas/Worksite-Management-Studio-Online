@@ -11,16 +11,11 @@ interface WorkersState {
   loadingState: LoadingState
   error: string | null
   filters: WorkerFilters
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-  }
   lastFetchTime: number | null
   cacheTimeout: number // milliseconds
 
   // Actions
-  fetchWorkers: (filters?: WorkerFilters, page?: number, pageSize?: number) => Promise<Worker[]>
+  fetchWorkers: (filters?: WorkerFilters) => Promise<Worker[]>
   setFilters: (filters: WorkerFilters) => void
   addWorker: (worker: Worker) => Promise<Worker>
   updateWorker: (worker: Worker) => Promise<Worker>
@@ -34,23 +29,18 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   loadingState: 'idle',
   error: null,
   filters: {},
-  pagination: {
-    page: 1,
-    pageSize: 10,
-    total: 0
-  },
   lastFetchTime: null,
   cacheTimeout: 5 * 60 * 1000, // 5 minutes cache
 
   setFilters: (filters: WorkerFilters) => {
-    set({ filters, pagination: { ...get().pagination, page: 1 } })
+    set({ filters })
   },
 
   resetError: () => {
     set({ error: null })
   },
 
-  fetchWorkers: async (filters?: WorkerFilters, page?: number, pageSize?: number) => {
+  fetchWorkers: async (filters?: WorkerFilters) => {
     const currentState = get()
     const currentTime = Date.now()
 
@@ -59,9 +49,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       currentState.lastFetchTime &&
       currentTime - currentState.lastFetchTime < currentState.cacheTimeout &&
       currentState.loadingState === 'success' &&
-      JSON.stringify(currentState.filters) === JSON.stringify(filters || {}) &&
-      currentState.pagination.page === (page || currentState.pagination.page) &&
-      currentState.pagination.pageSize === (pageSize || currentState.pagination.pageSize)
+      JSON.stringify(currentState.filters) === JSON.stringify(filters || {})
     ) {
       return currentState.workers
     }
@@ -70,28 +58,17 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     console.log('Fetching workers with filters:', filters)
 
     try {
-      const paginationParams = {
-        page: page || currentState.pagination.page,
-        pageSize: pageSize || currentState.pagination.pageSize
-      }
-
-      console.log('Fetching with pagination:', paginationParams)
-      const result = await WorkersAPI.getAll(filters, paginationParams)
+      const result = await WorkersAPI.getAll(filters)
       console.log('API result:', result)
 
       set({
-        workers: result.data,
+        workers: result,
         loadingState: 'success',
         filters: filters || {},
-        pagination: {
-          page: paginationParams.page,
-          pageSize: paginationParams.pageSize,
-          total: result.total
-        },
         lastFetchTime: currentTime
       })
 
-      return result.data
+      return result
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error fetching workers:', error)
@@ -187,7 +164,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       })
       toast.error(`Failed to delete some workers: ${errorMessage}`)
       // Refresh to sync with backend
-      get().fetchWorkers(get().filters, get().pagination.page, get().pagination.pageSize)
+      get().fetchWorkers(get().filters)
       throw error
     }
   }

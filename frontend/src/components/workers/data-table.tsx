@@ -4,6 +4,7 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   useReactTable,
   ColumnDef,
   SortingState,
@@ -84,7 +85,6 @@ export function WorkersDataTable() {
   const {
     workers,
     loadingState,
-    pagination,
     fetchWorkers,
     addWorker,
     updateWorker,
@@ -95,8 +95,8 @@ export function WorkersDataTable() {
 
   // Fetch workers on mount and when dependencies change
   React.useEffect(() => {
-    fetchWorkers(filters, pagination.page, pagination.pageSize)
-  }, [fetchWorkers, filters, pagination.page, pagination.pageSize])
+    fetchWorkers(filters)
+  }, [fetchWorkers, filters])
 
   // Define table columns
   const columns = React.useMemo<ColumnDef<Worker>[]>(
@@ -244,8 +244,7 @@ export function WorkersDataTable() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
+    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
@@ -287,14 +286,14 @@ export function WorkersDataTable() {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id)
     deleteWorkers(selectedIds)
     setRowSelection({})
-    refreshTable(1)
+    refreshTable()
     setDeleteMultipleConfirmOpen(false)
   }
 
   const handleAddWorker = async (worker: Worker) => {
     await addWorker(worker)
     setAddDialogOpen(false)
-    refreshTable(1)
+    refreshTable()
   }
 
   const handleEditWorker = async (worker: Worker) => {
@@ -321,7 +320,7 @@ export function WorkersDataTable() {
   const handleApplyFilters = () => {
     updateFilters(tempFilters)
     setFilterPopoverOpen(false)
-    refreshTable(1)
+    refreshTable()
   }
 
   const handleSearchChange = (value: string) => {
@@ -336,7 +335,7 @@ export function WorkersDataTable() {
     if (!searchTerm.trim()) delete updatedFilters.search
 
     updateFilters(updatedFilters)
-    refreshTable(1)
+    refreshTable()
   }
 
   // Helper functions
@@ -349,11 +348,11 @@ export function WorkersDataTable() {
     setTempFilters({})
     updateFilters({})
     setFilterPopoverOpen(false)
-    refreshTable(1)
+    refreshTable()
   }
 
-  const refreshTable = (page = pagination.page) => {
-    fetchWorkers(filters, page, pagination.pageSize)
+  const refreshTable = () => {
+    fetchWorkers(filters)
   }
 
   // Filter fields for popover
@@ -397,7 +396,7 @@ export function WorkersDataTable() {
             setTempFilters({})
             setStoreFilters({})
             setFilterPopoverOpen(false)
-            refreshTable(1)
+            refreshTable()
           }}
           disabled={loadingState === 'loading'}
         >
@@ -542,31 +541,26 @@ export function WorkersDataTable() {
       {/* Pagination */}
       <div className='flex items-center justify-end space-x-2 py-4'>
         <div className='text-muted-foreground flex-1 text-sm'>
-          {table.getFilteredSelectedRowModel().rows.length} of {pagination.total} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className='flex items-center space-x-2'>
           <Button
             variant='outline'
             size='sm'
-            onClick={() => refreshTable(pagination.page - 1)}
-            disabled={pagination.page <= 1}
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
           >
             Previous
           </Button>
-          <span className='text-muted-foreground text-sm'>
-            Page {pagination.page} of {Math.ceil(pagination.total / pagination.pageSize)}
-          </span>
           <Button
             variant='outline'
             size='sm'
-            onClick={() => refreshTable(pagination.page + 1)}
-            disabled={pagination.page * pagination.pageSize >= pagination.total}
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
           >
             Next
           </Button>
-          <span className='text-muted-foreground ml-2 text-sm'>
-            Showing {workers.length} of {pagination.total} workers
-          </span>
         </div>
       </div>
 

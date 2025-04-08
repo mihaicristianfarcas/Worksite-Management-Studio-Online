@@ -31,8 +31,6 @@ type FilterParams struct {
 	MaxSalary int    `query:"max_salary"`
 	SortBy    string `query:"sort_by"`
 	SortOrder string `query:"sort_order"` // "asc" or "desc"
-	Page      int    `query:"page"`
-	PageSize  int    `query:"pageSize"`
 	Search    string `query:"search"`
 }
 
@@ -51,22 +49,13 @@ type PaginatedResponse struct {
 // Sort by name: ?sort_by=name&sort_order=asc
 // Sort by age: ?sort_by=age&sort_order=desc
 // Sort by salary: ?sort_by=salary&sort_order=asc
-// Pagination: ?page=1&pageSize=10
 // Search: ?search=john
-// Combine filters: ?position=Developer&min_age=25&sort_by=salary&page=1&pageSize=10&search=john
+// Combine filters: ?position=Developer&min_age=25&sort_by=salary&search=john
 
 func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 	var params FilterParams
 	if err := ctx.Bind(&params); err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid filter parameters"})
-	}
-
-	// Set default values for pagination
-	if params.Page < 1 {
-		params.Page = 1
-	}
-	if params.PageSize < 1 {
-		params.PageSize = 10
 	}
 
 	// Get filtered workers
@@ -107,30 +96,7 @@ func (c *Controller) GetAllWorkers(ctx echo.Context) error {
 		})
 	}
 
-	// Apply pagination
-	total := len(filteredWorkers)
-	start := (params.Page - 1) * params.PageSize
-	end := start + params.PageSize
-	if start >= total {
-		start = 0
-		end = 0
-	} else if end > total {
-		end = total
-	}
-
-	var paginatedWorkers []model.Worker
-	if start < end {
-		paginatedWorkers = filteredWorkers[start:end]
-	}
-
-	response := PaginatedResponse{
-		Data:     paginatedWorkers,
-		Total:    total,
-		Page:     params.Page,
-		PageSize: params.PageSize,
-	}
-
-	return ctx.JSON(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, filteredWorkers)
 }
 
 func (c *Controller) GetWorker(ctx echo.Context) error {
