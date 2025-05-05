@@ -187,6 +187,8 @@ func TestProjectController(t *testing.T) {
 			Description: "Complete overhaul of the company website with modern design and improved functionality",
 			Status:      "active",
 			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
 		}
 		jsonData, _ := json.Marshal(project)
 
@@ -236,6 +238,8 @@ func TestProjectController(t *testing.T) {
 			Description: "Development of a new mobile application for iOS and Android platforms",
 			Status:      "active",
 			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
 		}
 		jsonData, _ := json.Marshal(project)
 		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
@@ -284,6 +288,8 @@ func TestProjectController(t *testing.T) {
 			Description: "A comprehensive project with multiple phases and deliverables",
 			Status:      "active",
 			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
 		}
 		jsonData, _ := json.Marshal(project)
 		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
@@ -349,6 +355,8 @@ func TestWorkerProjectRelationship(t *testing.T) {
 		Description: "Complete overhaul of the company website with modern design and improved functionality",
 		Status:      "active",
 		StartDate:   time.Now(),
+		Latitude:    45.123456,
+		Longitude:   -122.123456,
 	}
 	jsonData, _ = json.Marshal(project)
 	req = httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))

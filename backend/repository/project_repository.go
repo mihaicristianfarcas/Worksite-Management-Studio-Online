@@ -64,6 +64,12 @@ func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string
 	return projects, err
 }
 
+func (r *ProjectRepository) GetAllWorkers() ([]model.Worker, error) {
+	var workers []model.Worker
+	err := r.db.Preload("Projects").Find(&workers).Error
+	return workers, err
+}
+
 // Update updates a project
 func (r *ProjectRepository) Update(project *model.Project) error {
 	return r.db.Save(project).Error

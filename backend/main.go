@@ -47,9 +47,10 @@ func main() {
 	e.PUT("/api/projects/:id", projectCtrl.UpdateProject)
 	e.DELETE("/api/projects/:id", projectCtrl.DeleteProject)
 
-	// Worker-Project relationship routes
-	e.POST("/api/workers/:workerId/projects/:projectId", workerCtrl.AddToProject)
-	e.DELETE("/api/workers/:workerId/projects/:projectId", workerCtrl.RemoveFromProject)
+	// Project-Worker relationship routes
+	e.POST("/api/projects/:id/workers", projectCtrl.AssignWorkerToProject)
+	e.GET("/api/projects/:id/workers/available", projectCtrl.GetAvailableWorkers)
+	e.DELETE("/api/projects/:id/workers/:workerId", projectCtrl.UnassignWorkerFromProject)
 
 	// Start the server
 	e.Logger.Fatal(e.Start(":8080"))
