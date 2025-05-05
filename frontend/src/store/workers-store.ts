@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { WorkersAPI, Worker, WorkerFilters } from '@/api/workers-api'
+import { WorkersAPI } from '@/api/workers-api'
+import { Worker, WorkerFilters } from '@/api/types'
 import { toast } from 'sonner'
 
 // Enhanced loading state type
@@ -177,7 +178,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
         workers: state.workers.filter(w => !ids.includes(w.id)),
         loadingState: 'success'
       }))
-      toast.success(`${ids.length} workers deleted successfully!`)
+      toast.success(`${ids.length} worker(s) deleted successfully!`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error deleting workers:', error)

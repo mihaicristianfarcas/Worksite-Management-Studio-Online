@@ -1,54 +1,11 @@
-// Type definitions and API service for projects
-export type Project = {
-  id: string
-  name: string
-  description: string
-  status: 'active' | 'completed' | 'on_hold' | 'cancelled'
-  start_date: string
-  end_date?: string
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-  workers?: Worker[]
-}
-
-export type Worker = {
-  id: string
-  name: string
-  age: number
-  position: string
-  salary: number
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-  projects?: Project[]
-}
-
-export type ProjectFilters = {
-  name?: string
-  status?: string
-  search?: string
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-}
-
-export type PaginationParams = {
-  page: number
-  pageSize: number
-}
-
-export type PaginatedResponse<T> = {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-}
+import { Project, ProjectFilters, PaginationParams, PaginatedResponse } from './types'
+import { Worker } from './types'
 
 // API base URL - make sure this matches backend
 const API_URL = 'http://localhost:8080/api'
 
 // Projects API service
-export const ProjectsAPI = {
+export const projectApi = {
   // Fetch all projects with optional filters and sorting
   async getAll(
     filters?: ProjectFilters,
@@ -127,8 +84,26 @@ export const ProjectsAPI = {
     }
   },
 
+  // Get a project by ID
+  async getById(id: number): Promise<Project> {
+    console.log('Fetching project with ID:', id)
+    const response = await fetch(`${API_URL}/projects/${id}`)
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const errorMessage =
+        errorData.error || `Failed to fetch project: ${response.status} ${response.statusText}`
+      console.error('Error fetching project:', errorMessage)
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    console.log('Project retrieved:', data)
+    return data
+  },
+
   // Add a new project
-  async create(project: Project): Promise<Project> {
+  async create(project: Omit<Project, 'id'>): Promise<Project> {
     console.log('Creating project:', project)
     const response = await fetch(`${API_URL}/projects`, {
       method: 'POST',
@@ -151,9 +126,9 @@ export const ProjectsAPI = {
   },
 
   // Update an existing project
-  async update(project: Project): Promise<Project> {
-    console.log('Updating project:', project)
-    const response = await fetch(`${API_URL}/projects/${project.id}`, {
+  async update(id: number, project: Partial<Project>): Promise<Project> {
+    console.log('Updating project with ID:', id, 'Changes:', project)
+    const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -174,7 +149,7 @@ export const ProjectsAPI = {
   },
 
   // Delete a project
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     console.log('Deleting project:', id)
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'DELETE'
@@ -189,40 +164,65 @@ export const ProjectsAPI = {
     console.log('Project deleted successfully')
   },
 
-  // Delete multiple projects
-  async deleteMany(ids: string[]): Promise<void> {
-    console.log('Deleting multiple projects:', ids)
-    // Create a promise for each delete operation
-    const deletePromises = ids.map(async id => {
-      const response = await fetch(`${API_URL}/projects/${id}`, {
-        method: 'DELETE'
-      })
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to delete project ${id}`)
+  // Assign a worker to a project
+  async assignWorker(projectId: number, workerId: number): Promise<Project> {
+    console.log('Assigning worker', workerId, 'to project', projectId)
+    const response = await fetch(`${API_URL}/projects/${projectId}/workers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ workerId })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const errorMessage = errorData.error || 'Failed to assign worker to project'
+      console.error('Error assigning worker:', errorMessage)
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    console.log('Worker assigned to project:', data)
+    return data
+  },
+
+  // Unassign a worker from a project
+  async unassignWorker(projectId: number, workerId: number): Promise<Project> {
+    console.log('Unassigning worker', workerId, 'from project', projectId)
+    const response = await fetch(`${API_URL}/projects/${projectId}/workers/${workerId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
       }
     })
 
-    // Wait for all delete operations to complete
-    const results = await Promise.allSettled(deletePromises)
-
-    // Check if any operations failed
-    const failures = results
-      .map((result, index) => {
-        if (result.status === 'rejected') {
-          return { id: ids[index], error: (result as PromiseRejectedResult).reason }
-        }
-        return null
-      })
-      .filter(Boolean)
-
-    if (failures.length > 0) {
-      const errorMessage = `Failed to delete ${failures.length} projects: ${failures
-        .map(f => f?.error.message)
-        .join(', ')}`
-      console.error('Error deleting multiple projects:', errorMessage)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const errorMessage = errorData.error || 'Failed to unassign worker from project'
+      console.error('Error unassigning worker:', errorMessage)
       throw new Error(errorMessage)
     }
-    console.log('Multiple projects deleted successfully')
+
+    const data = await response.json()
+    console.log('Worker unassigned from project:', data)
+    return data
+  },
+
+  // Get available workers for a project
+  async getAvailableWorkers(projectId: number): Promise<Worker[]> {
+    console.log('Getting available workers for project', projectId)
+    const response = await fetch(`${API_URL}/projects/${projectId}/workers/available`)
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const errorMessage = errorData.error || 'Failed to get available workers'
+      console.error('Error getting available workers:', errorMessage)
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    console.log('Available workers:', data)
+    return data
   }
 }

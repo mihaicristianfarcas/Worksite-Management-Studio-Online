@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { Project, ProjectFilters, ProjectsAPI } from '@/api/projects-api'
+import { Project, ProjectFilters, Worker } from '@/api/types'
+import { projectApi } from '@/api/projects-api'
 
 interface ProjectsState {
   projects: Project[]
@@ -12,12 +13,15 @@ interface ProjectsState {
     total: number
   }
   lastFetchTime: number | null
-  fetchProjects: (filters?: ProjectFilters, page?: number, pageSize?: number) => Promise<void>
+  fetchProjects: (filters?: ProjectFilters, page?: number, pageSize?: number) => Promise<Project[]>
+  refreshProjects: () => Promise<Project[]>
   setFilters: (filters: ProjectFilters) => void
   addProject: (project: Project) => Promise<void>
-  updateProject: (project: Project) => Promise<void>
-  deleteProject: (id: string) => Promise<void>
-  deleteProjects: (ids: string[]) => Promise<void>
+  updateProject: (project: Project) => Promise<Project>
+  deleteProject: (id: number) => Promise<void>
+  assignWorker: (projectId: number, workerId: number) => Promise<Project>
+  unassignWorker: (projectId: number, workerId: number) => Promise<Project>
+  getAvailableWorkers: (projectId: number) => Promise<Worker[]>
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
@@ -44,14 +48,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       state.projects.length > 0
     ) {
       console.log('Using cached projects data')
-      return
+      return state.projects
     }
 
     console.log('Fetching projects with filters:', filters, 'page:', page, 'pageSize:', pageSize)
     set({ loadingState: 'loading', error: null })
 
     try {
-      const response = await ProjectsAPI.getAll(filters, { page, pageSize })
+      const response = await projectApi.getAll(filters, { page, pageSize })
       console.log('Projects fetched successfully:', response)
       set({
         projects: response.data,
@@ -63,6 +67,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         loadingState: 'idle',
         lastFetchTime: currentTime
       })
+      return response.data
     } catch (error) {
       console.error('Error fetching projects:', error)
       set({
@@ -71,6 +76,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       })
       throw error
     }
+  },
+
+  refreshProjects: async () => {
+    const { filters, pagination } = get()
+    return await get().fetchProjects(filters, pagination.page, pagination.pageSize)
   },
 
   setFilters: (filters: ProjectFilters) => {
@@ -83,9 +93,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      await ProjectsAPI.create(project)
-      const state = get()
-      await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
+      await projectApi.create(project)
+      await get().refreshProjects()
     } catch (error) {
       console.error('Error adding project:', error)
       set({
@@ -101,9 +110,9 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      await ProjectsAPI.update(project)
-      const state = get()
-      await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
+      const updatedProject = await projectApi.update(project.id, project)
+      await get().refreshProjects()
+      return updatedProject
     } catch (error) {
       console.error('Error updating project:', error)
       set({
@@ -114,14 +123,13 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
 
-  deleteProject: async (id: string) => {
+  deleteProject: async (id: number) => {
     console.log('Deleting project:', id)
     set({ loadingState: 'loading', error: null })
 
     try {
-      await ProjectsAPI.delete(id)
-      const state = get()
-      await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
+      await projectApi.delete(id)
+      await get().refreshProjects()
     } catch (error) {
       console.error('Error deleting project:', error)
       set({
@@ -132,19 +140,61 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
 
-  deleteProjects: async (ids: string[]) => {
-    console.log('Deleting multiple projects:', ids)
+  assignWorker: async (projectId: number, workerId: number) => {
+    console.log('Assigning worker', workerId, 'to project', projectId)
     set({ loadingState: 'loading', error: null })
 
     try {
-      await ProjectsAPI.deleteMany(ids)
-      const state = get()
-      await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
+      const updatedProject = await projectApi.assignWorker(projectId, workerId)
+      set(state => ({
+        projects: state.projects.map(p => (p.id === projectId ? updatedProject : p)),
+        loadingState: 'idle'
+      }))
+      return updatedProject
     } catch (error) {
-      console.error('Error deleting multiple projects:', error)
+      console.error('Error assigning worker:', error)
       set({
         loadingState: 'error',
-        error: error instanceof Error ? error.message : 'Failed to delete projects'
+        error: error instanceof Error ? error.message : 'Failed to assign worker'
+      })
+      throw error
+    }
+  },
+
+  unassignWorker: async (projectId: number, workerId: number) => {
+    console.log('Unassigning worker', workerId, 'from project', projectId)
+    set({ loadingState: 'loading', error: null })
+
+    try {
+      const updatedProject = await projectApi.unassignWorker(projectId, workerId)
+      set(state => ({
+        projects: state.projects.map(p => (p.id === projectId ? updatedProject : p)),
+        loadingState: 'idle'
+      }))
+      return updatedProject
+    } catch (error) {
+      console.error('Error unassigning worker:', error)
+      set({
+        loadingState: 'error',
+        error: error instanceof Error ? error.message : 'Failed to unassign worker'
+      })
+      throw error
+    }
+  },
+
+  getAvailableWorkers: async (projectId: number): Promise<Worker[]> => {
+    console.log('Getting available workers for project', projectId)
+    set({ loadingState: 'loading', error: null })
+
+    try {
+      const workers = await projectApi.getAvailableWorkers(projectId)
+      set({ loadingState: 'idle' })
+      return workers
+    } catch (error) {
+      console.error('Error getting available workers:', error)
+      set({
+        loadingState: 'error',
+        error: error instanceof Error ? error.message : 'Failed to get available workers'
       })
       throw error
     }
