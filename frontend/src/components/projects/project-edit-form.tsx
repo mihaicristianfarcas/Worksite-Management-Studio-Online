@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Project } from '@/api/projects-api'
+import { Project } from '@/api/types'
 
 type ProjectFormValues = z.infer<typeof ProjectSchema>
 
@@ -39,6 +39,8 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
         ? new Date(project.start_date).toISOString().split('T')[0]
         : '',
       end_date: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : '',
+      latitude: project.latitude || 0,
+      longitude: project.longitude || 0,
       created_at: project.created_at,
       updated_at: project.updated_at,
       deleted_at: project.deleted_at
@@ -58,7 +60,7 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
       onEditProject({
         ...project,
         ...formattedData
-      })
+      } as Project)
     } catch (error) {
       console.error('Error formatting project data:', error)
       throw error
@@ -128,6 +130,36 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
             <p className='ml-1 mt-1 text-xs text-gray-500'>
               Select the project end date (if known)
             </p>
+          </div>
+
+          {/* Latitude */}
+          <div>
+            <Input
+              id='latitude'
+              type='number'
+              step='any'
+              placeholder='Latitude'
+              {...register('latitude', { valueAsNumber: true })}
+            />
+            {errors.latitude?.message && (
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.latitude.message}</p>
+            )}
+            <p className='ml-1 mt-1 text-xs text-gray-500'>Enter latitude (-90 to 90)</p>
+          </div>
+
+          {/* Longitude */}
+          <div>
+            <Input
+              id='longitude'
+              type='number'
+              step='any'
+              placeholder='Longitude'
+              {...register('longitude', { valueAsNumber: true })}
+            />
+            {errors.longitude?.message && (
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.longitude.message}</p>
+            )}
+            <p className='ml-1 mt-1 text-xs text-gray-500'>Enter longitude (-180 to 180)</p>
           </div>
         </div>
 

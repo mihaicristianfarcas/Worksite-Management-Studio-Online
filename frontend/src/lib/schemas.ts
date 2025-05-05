@@ -27,7 +27,7 @@ export const WorkerSchema = z.object({
 })
 
 export const ProjectSchema = z.object({
-  id: z.string().optional(),
+  id: z.coerce.number().optional(),
   name: z
     .string()
     .min(2, { message: 'Name must be at least 2 characters.' })
@@ -41,6 +41,8 @@ export const ProjectSchema = z.object({
   }),
   start_date: z.string(),
   end_date: z.string().optional(),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   deleted_at: z.string().nullable().optional()

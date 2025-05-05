@@ -36,7 +36,9 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
       description: '',
       status: 'active',
       start_date: new Date().toISOString().split('T')[0],
-      end_date: undefined
+      end_date: undefined,
+      latitude: 0,
+      longitude: 0
     }
   })
 
@@ -46,7 +48,9 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
       const formattedData = {
         ...data,
         start_date: new Date(data.start_date + 'T00:00:00Z').toISOString(),
-        end_date: data.end_date ? new Date(data.end_date + 'T00:00:00Z').toISOString() : undefined
+        end_date: data.end_date ? new Date(data.end_date + 'T00:00:00Z').toISOString() : undefined,
+        latitude: Number(data.latitude),
+        longitude: Number(data.longitude)
       }
 
       console.log('Submitting new project:', formattedData)
@@ -115,6 +119,36 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
             <p className='ml-1 mt-1 text-xs text-gray-500'>
               Select the project end date (if known)
             </p>
+          </div>
+
+          {/* Latitude */}
+          <div>
+            <Input
+              id='latitude'
+              type='number'
+              step='any'
+              placeholder='Latitude'
+              {...register('latitude', { valueAsNumber: true })}
+            />
+            {errors.latitude?.message && (
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.latitude.message}</p>
+            )}
+            <p className='ml-1 mt-1 text-xs text-gray-500'>Enter latitude (-90 to 90)</p>
+          </div>
+
+          {/* Longitude */}
+          <div>
+            <Input
+              id='longitude'
+              type='number'
+              step='any'
+              placeholder='Longitude'
+              {...register('longitude', { valueAsNumber: true })}
+            />
+            {errors.longitude?.message && (
+              <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.longitude.message}</p>
+            )}
+            <p className='ml-1 mt-1 text-xs text-gray-500'>Enter longitude (-180 to 180)</p>
           </div>
         </div>
 
