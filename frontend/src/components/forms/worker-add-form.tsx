@@ -4,19 +4,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
-import { Worker } from '@/data/model'
+import { Worker } from '@/api/workers-api'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
-interface EditWorkerFormProps {
-  worker: Worker
-  onEditWorker: (worker: Worker) => void
+interface AddWorkerFormProps {
+  onAddWorker: (
+    worker: Omit<Worker, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'projects'>
+  ) => void
 }
 
-export default function EditWorkerForm({
-  worker,
-  onEditWorker: onEditWorker
-}: EditWorkerFormProps) {
+export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   const {
     register,
     handleSubmit,
@@ -25,24 +23,18 @@ export default function EditWorkerForm({
   } = useForm<WorkerFormInputs>({
     resolver: zodResolver(WorkerSchema),
     defaultValues: {
-      name: worker.name,
-      age: worker.age,
-      position: worker.position,
-      salary: worker.salary
+      name: '',
+      age: 18,
+      position: '',
+      salary: 0
     }
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    const newWorker = {
-      id: worker.id,
-      ...data
-    }
-
-    onEditWorker(newWorker)
+    onAddWorker(data)
     reset()
   }
 
-  // TODO add worker
   return (
     <section className='relative isolate'>
       <form onSubmit={handleSubmit(onSubmit)} className='mt-4 lg:flex-auto' noValidate>
@@ -56,7 +48,6 @@ export default function EditWorkerForm({
               autoComplete='given-name'
               {...register('name')}
             />
-
             {errors.name?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.name.message}</p>
             )}
@@ -68,10 +59,11 @@ export default function EditWorkerForm({
               id='age'
               type='number'
               placeholder='Age'
+              min={18}
+              max={100}
               autoComplete='age'
               {...register('age')}
             />
-
             {errors.age?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.age.message}</p>
             )}
@@ -83,10 +75,11 @@ export default function EditWorkerForm({
               id='salary'
               type='number'
               placeholder='Salary'
+              min={0}
+              step={1}
               autoComplete='salary'
               {...register('salary')}
             />
-
             {errors.salary?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.salary.message}</p>
             )}
@@ -101,7 +94,6 @@ export default function EditWorkerForm({
               autoComplete='position'
               {...register('position')}
             />
-
             {errors.position?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.position.message}</p>
             )}
@@ -109,7 +101,7 @@ export default function EditWorkerForm({
         </div>
         {/* Submit */}
         <Button className='mt-4 w-full' type='submit' disabled={isSubmitting}>
-          {isSubmitting ? 'Modifying...' : 'Proceed'}
+          {isSubmitting ? 'Adding...' : 'Add Worker'}
         </Button>
       </form>
     </section>
