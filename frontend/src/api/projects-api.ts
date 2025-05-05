@@ -125,7 +125,7 @@ export const ProjectsAPI = {
       console.error('Error fetching projects:', error)
       throw error
     }
-  }
+  },
 
   // Add a new project
   async create(project: Project): Promise<Project> {
@@ -144,7 +144,7 @@ export const ProjectsAPI = {
     }
 
     return response.json()
-  }
+  },
 
   // Update an existing project
   async update(project: Project): Promise<Project> {
@@ -163,7 +163,7 @@ export const ProjectsAPI = {
     }
 
     return response.json()
-  }
+  },
 
   // Delete a project
   async delete(id: string): Promise<void> {
@@ -176,7 +176,7 @@ export const ProjectsAPI = {
       const errorMessage = errorData.error || 'Failed to delete project'
       throw new Error(errorMessage)
     }
-  }
+  },
 
   // Delete multiple projects
   async deleteMany(ids: string[]): Promise<void> {
@@ -212,4 +212,4 @@ export const ProjectsAPI = {
       )
     }
   }
-} 
+}

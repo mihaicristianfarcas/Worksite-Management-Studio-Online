@@ -1,7 +1,11 @@
+import PageTitle from '@/components/page-title'
+import { ProjectsDataTable } from '@/components/projects/data-table'
+
 export default function Projects() {
   return (
-    <div className='flex h-full w-full items-center justify-center text-3xl italic'>
-      <h1>Work in progress...</h1>
-    </div>
+    <>
+      <PageTitle>Projects</PageTitle>
+      <ProjectsDataTable />
+    </>
   )
 }
