@@ -55,8 +55,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 // Project-specific components
-import AddProjectForm from '@/components/forms/project-add-form'
-import EditProjectForm from '@/components/forms/project-edit-form'
+import AddProjectForm from '@/components/projects/project-add-form'
+import EditProjectForm from '@/components/projects/project-edit-form'
 
 // API and store
 import { Project, ProjectFilters } from '@/api/projects-api'

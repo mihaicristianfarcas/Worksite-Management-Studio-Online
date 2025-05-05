@@ -56,7 +56,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 // Worker-specific components
 import AddWorkerForm from '@/components/workers/worker-add-form'
-import EditWorkerForm from '@/components/forms/worker-edit-form'
+import EditWorkerForm from '@/components/workers/worker-edit-form'
 
 // API and store
 import { Worker, WorkerFilters } from '@/api/workers-api'
