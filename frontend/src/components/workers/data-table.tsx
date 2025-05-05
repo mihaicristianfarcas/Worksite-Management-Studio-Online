@@ -59,10 +59,12 @@ import AddWorkerForm from '@/components/workers/worker-add-form'
 import EditWorkerForm from '@/components/workers/worker-edit-form'
 
 // API and store
-import { Worker, WorkerFilters } from '@/api/workers-api'
+import { Worker, WorkerFilters } from '@/api/types'
 import { useWorkersStore } from '@/store/workers-store'
 
 export function WorkersDataTable() {
+  const FIRST_PAGE = 1
+
   // Table state
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
@@ -287,14 +289,14 @@ export function WorkersDataTable() {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id)
     deleteWorkers(selectedIds)
     setRowSelection({})
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
     setDeleteMultipleConfirmOpen(false)
   }
 
   const handleAddWorker = async (worker: Worker) => {
     await addWorker(worker)
     setAddDialogOpen(false)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const handleEditWorker = async (worker: Worker) => {
@@ -319,7 +321,7 @@ export function WorkersDataTable() {
       search: searchTerm.trim() || undefined
     }
     updateFilters(updatedFilters)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -347,7 +349,7 @@ export function WorkersDataTable() {
 
     updateFilters(cleanedFilters)
     setFilterPopoverOpen(false)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const resetFilters = () => {
@@ -355,7 +357,7 @@ export function WorkersDataTable() {
     setSearchTerm('')
     updateFilters({})
     setFilterPopoverOpen(false)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const refreshTable = (page = pagination.page) => {
@@ -399,7 +401,7 @@ export function WorkersDataTable() {
             setGlobalFilter('')
             setSorting([])
             setColumnVisibility({})
-            refreshTable(1)
+            refreshTable(FIRST_PAGE)
           }}
           disabled={loadingState === 'loading'}
         >
@@ -472,7 +474,7 @@ export function WorkersDataTable() {
               onAddWorker={async worker => {
                 await addWorker(worker as Worker)
                 setAddDialogOpen(false)
-                refreshTable(1)
+                refreshTable(FIRST_PAGE)
               }}
             />
           </DialogContent>
