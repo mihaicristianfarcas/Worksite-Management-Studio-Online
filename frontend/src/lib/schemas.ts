@@ -27,6 +27,7 @@ export const WorkerSchema = z.object({
 })
 
 export const ProjectSchema = z.object({
+  id: z.string().optional(),
   name: z
     .string()
     .min(2, { message: 'Name must be at least 2 characters.' })
@@ -38,9 +39,9 @@ export const ProjectSchema = z.object({
   status: z.enum(['active', 'completed', 'on_hold', 'cancelled'], {
     errorMap: () => ({ message: 'Status must be one of: active, completed, on_hold, cancelled' })
   }),
-  start_date: z.string().transform(str => new Date(str)),
-  end_date: z
-    .string()
-    .optional()
-    .transform(str => (str ? new Date(str) : undefined))
+  start_date: z.string(),
+  end_date: z.string().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  deleted_at: z.string().nullable().optional()
 })

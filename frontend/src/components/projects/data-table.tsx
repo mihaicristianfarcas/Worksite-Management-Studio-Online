@@ -54,56 +54,56 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
-// Worker-specific components
-import AddWorkerForm from '@/components/workers/worker-add-form'
-import EditWorkerForm from '@/components/forms/worker-edit-form'
+// Project-specific components
+import AddProjectForm from '@/components/forms/project-add-form'
+import EditProjectForm from '@/components/forms/project-edit-form'
 
 // API and store
-import { Worker, WorkerFilters } from '@/api/workers-api'
-import { useWorkersStore } from '@/store/workers-store'
+import { Project, ProjectFilters } from '@/api/projects-api'
+import { useProjectsStore } from '@/store/projects-store'
 
-export function WorkersDataTable() {
+export function ProjectsDataTable() {
   // Table state
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [globalFilter, setGlobalFilter] = React.useState('')
-  const [filters, setFilters] = React.useState<WorkerFilters>({})
-  const [tempFilters, setTempFilters] = React.useState<WorkerFilters>({})
+  const [filters, setFilters] = React.useState<ProjectFilters>({})
+  const [tempFilters, setTempFilters] = React.useState<ProjectFilters>({})
   const [searchTerm, setSearchTerm] = React.useState('')
 
   // UI state
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
-  const [selectedWorker, setSelectedWorker] = React.useState<Worker | null>(null)
+  const [selectedProject, setSelectedProject] = React.useState<Project | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = React.useState(false)
-  const [workerToDelete, setWorkerToDelete] = React.useState<Worker | null>(null)
+  const [projectToDelete, setProjectToDelete] = React.useState<Project | null>(null)
   const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false)
 
   // Get data and methods from store
   const {
-    workers,
+    projects,
     loadingState,
     pagination,
-    fetchWorkers,
-    addWorker,
-    updateWorker,
-    deleteWorker,
-    deleteWorkers,
+    fetchProjects,
+    addProject,
+    updateProject,
+    deleteProject,
+    deleteProjects,
     setFilters: setStoreFilters
-  } = useWorkersStore()
+  } = useProjectsStore()
 
-  // Fetch workers on mount and when dependencies change
+  // Fetch projects on mount and when dependencies change
   React.useEffect(() => {
-    fetchWorkers(filters, pagination.page, pagination.pageSize)
-  }, [fetchWorkers, filters, pagination.page, pagination.pageSize])
+    fetchProjects(filters, pagination.page, pagination.pageSize)
+  }, [fetchProjects, filters, pagination.page, pagination.pageSize])
 
   // Define table columns
-  const columns = React.useMemo<ColumnDef<Worker>[]>(
+  const columns = React.useMemo<ColumnDef<Project>[]>(
     () => [
       {
         id: 'select',
-        header: ({ table }: { table: TableInstance<Worker> }) => (
+        header: ({ table }: { table: TableInstance<Project> }) => (
           <Checkbox
             checked={
               table.getIsAllPageRowsSelected() ||
@@ -114,7 +114,7 @@ export function WorkersDataTable() {
             className='mx-auto'
           />
         ),
-        cell: ({ row }: { row: Row<Worker> }) => (
+        cell: ({ row }: { row: Row<Project> }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={value => row.toggleSelected(!!value)}
@@ -128,7 +128,7 @@ export function WorkersDataTable() {
       },
       {
         accessorKey: 'name',
-        header: ({ column }: { column: Column<Worker> }) => (
+        header: ({ column }: { column: Column<Project> }) => (
           <Button
             variant='ghost'
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -138,73 +138,88 @@ export function WorkersDataTable() {
             <ArrowUpDown className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }: { row: Row<Worker> }) => (
+        cell: ({ row }: { row: Row<Project> }) => (
           <div className='text-center capitalize'>{row.getValue('name')}</div>
         ),
         size: 200
       },
       {
-        accessorKey: 'age',
-        header: ({ column }: { column: Column<Worker> }) => (
+        accessorKey: 'description',
+        header: ({ column }: { column: Column<Project> }) => (
           <Button
             variant='ghost'
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className='w-full justify-center'
           >
-            Age
+            Description
             <ArrowUpDown className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }: { row: Row<Worker> }) => (
-          <div className='text-center'>{row.getValue('age')}</div>
+        cell: ({ row }: { row: Row<Project> }) => (
+          <div className='text-center'>{row.getValue('description')}</div>
         ),
-        size: 100
+        size: 300
       },
       {
-        accessorKey: 'position',
-        header: ({ column }: { column: Column<Worker> }) => (
+        accessorKey: 'status',
+        header: ({ column }: { column: Column<Project> }) => (
           <Button
             variant='ghost'
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className='w-full justify-center'
           >
-            Position
+            Status
             <ArrowUpDown className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }: { row: Row<Worker> }) => (
-          <div className='text-center capitalize'>{row.getValue('position')}</div>
+        cell: ({ row }: { row: Row<Project> }) => (
+          <div className='text-center capitalize'>{row.getValue('status')}</div>
         ),
-        size: 200
+        size: 150
       },
       {
-        accessorKey: 'salary',
-        header: ({ column }: { column: Column<Worker> }) => (
+        accessorKey: 'start_date',
+        header: ({ column }: { column: Column<Project> }) => (
           <Button
             variant='ghost'
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className='w-full justify-center'
           >
-            Salary
+            Start Date
             <ArrowUpDown className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }: { row: Row<Worker> }) => {
-          const amount = parseFloat(row.getValue('salary'))
-          const formatted = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'RON'
-          }).format(amount)
-
-          return <div className='text-center font-medium'>{formatted}</div>
+        cell: ({ row }: { row: Row<Project> }) => {
+          const date = new Date(row.getValue('start_date'))
+          return <div className='text-center'>{date.toLocaleDateString()}</div>
+        },
+        size: 150
+      },
+      {
+        accessorKey: 'end_date',
+        header: ({ column }: { column: Column<Project> }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='w-full justify-center'
+          >
+            End Date
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        ),
+        cell: ({ row }: { row: Row<Project> }) => {
+          const date = row.getValue('end_date')
+          return (
+            <div className='text-center'>{date ? new Date(date).toLocaleDateString() : '-'}</div>
+          )
         },
         size: 150
       },
       {
         id: 'actions',
         enableHiding: false,
-        cell: ({ row }: { row: Row<Worker> }) => {
-          const worker = row.original
+        cell: ({ row }: { row: Row<Project> }) => {
+          const project = row.original
 
           return (
             <DropdownMenu>
@@ -216,13 +231,15 @@ export function WorkersDataTable() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(worker.id)}>
-                  Copy worker ID
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(project.id)}>
+                  Copy project ID
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSelectedWorker(worker)}>Edit</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSelectedProject(project)}>
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleDeleteWorker(worker)}
+                  onClick={() => handleDeleteProject(project)}
                   className='text-red-600'
                 >
                   Delete
@@ -239,7 +256,7 @@ export function WorkersDataTable() {
 
   // Create table instance
   const table = useReactTable({
-    data: workers,
+    data: projects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -270,14 +287,14 @@ export function WorkersDataTable() {
   })
 
   // Simplified handler functions
-  const handleDeleteWorker = (worker: Worker) => {
-    setWorkerToDelete(worker)
+  const handleDeleteProject = (project: Project) => {
+    setProjectToDelete(project)
     setDeleteConfirmOpen(true)
   }
 
   const handleConfirmDelete = () => {
-    if (workerToDelete) {
-      deleteWorker(workerToDelete.id)
+    if (projectToDelete) {
+      deleteProject(projectToDelete.id)
       refreshTable()
     }
     setDeleteConfirmOpen(false)
@@ -285,26 +302,26 @@ export function WorkersDataTable() {
 
   const handleDeleteMultiple = () => {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id)
-    deleteWorkers(selectedIds)
+    deleteProjects(selectedIds)
     setRowSelection({})
     refreshTable(1)
     setDeleteMultipleConfirmOpen(false)
   }
 
-  const handleAddWorker = async (worker: Worker) => {
-    await addWorker(worker)
+  const handleAddProject = async (project: Project) => {
+    await addProject(project)
     setAddDialogOpen(false)
     refreshTable(1)
   }
 
-  const handleEditWorker = async (worker: Worker) => {
-    await updateWorker(worker)
-    setSelectedWorker(null)
+  const handleEditProject = async (project: Project) => {
+    await updateProject(project)
+    setSelectedProject(null)
     refreshTable()
   }
 
   // Helper functions
-  const updateFilters = (updatedFilters: WorkerFilters) => {
+  const updateFilters = (updatedFilters: ProjectFilters) => {
     setFilters(updatedFilters)
     setStoreFilters(updatedFilters)
   }
@@ -326,24 +343,19 @@ export function WorkersDataTable() {
     const { name, value } = e.target
     const updatedFilters = {
       ...tempFilters,
-      [name]:
-        value === ''
-          ? undefined
-          : name.includes('Age') || name.includes('Salary')
-            ? Number(value)
-            : value
-    } as Partial<WorkerFilters>
+      [name]: value === '' ? undefined : value
+    } as Partial<ProjectFilters>
     setTempFilters(updatedFilters)
   }
 
   const handleApplyFilters = () => {
     const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
       if (value !== undefined && value !== '') {
-        const typedKey = key as keyof WorkerFilters
-        acc[typedKey] = value as WorkerFilters[keyof WorkerFilters]
+        const typedKey = key as keyof ProjectFilters
+        acc[typedKey] = value as ProjectFilters[keyof ProjectFilters]
       }
       return acc
-    }, {} as WorkerFilters)
+    }, {} as ProjectFilters)
 
     updateFilters(cleanedFilters)
     setFilterPopoverOpen(false)
@@ -359,16 +371,13 @@ export function WorkersDataTable() {
   }
 
   const refreshTable = (page = pagination.page) => {
-    fetchWorkers(filters, page, pagination.pageSize)
+    fetchProjects(filters, page, pagination.pageSize)
   }
 
   // Filter fields for popover
   const filterFields = [
-    { id: 'minAge', label: 'Min Age', type: 'number', min: 18, max: 100 },
-    { id: 'maxAge', label: 'Max Age', type: 'number', min: 18, max: 100 },
-    { id: 'minSalary', label: 'Min Salary', type: 'number', min: 0, step: 1 },
-    { id: 'maxSalary', label: 'Max Salary', type: 'number', min: 0, step: 1 },
-    { id: 'position', label: 'Position', type: 'text' }
+    { id: 'name', label: 'Name', type: 'text' },
+    { id: 'status', label: 'Status', type: 'text' }
   ]
 
   return (
@@ -378,7 +387,7 @@ export function WorkersDataTable() {
         {/* Search */}
         <div className='flex max-w-sm items-center'>
           <Input
-            placeholder='Search workers...'
+            placeholder='Search projects...'
             value={searchTerm}
             onChange={e => handleSearchChange(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -422,9 +431,9 @@ export function WorkersDataTable() {
           <PopoverContent className='w-80'>
             <div className='grid gap-4'>
               <div className='space-y-2'>
-                <h4 className='font-medium leading-none'>Filter Workers</h4>
+                <h4 className='font-medium leading-none'>Filter Projects</h4>
                 <p className='text-muted-foreground text-sm'>
-                  Set filters to find specific workers
+                  Set filters to find specific projects
                 </p>
               </div>
               <div className='grid gap-2'>
@@ -436,11 +445,8 @@ export function WorkersDataTable() {
                       name={field.id}
                       type={field.type}
                       className='col-span-2'
-                      value={tempFilters[field.id as keyof WorkerFilters] || ''}
+                      value={tempFilters[field.id as keyof ProjectFilters] || ''}
                       onChange={handleFilterChange}
-                      min={field.min}
-                      max={field.max}
-                      step={field.step}
                     />
                   </div>
                 ))}
@@ -455,22 +461,22 @@ export function WorkersDataTable() {
           </PopoverContent>
         </Popover>
 
-        {/* Add worker dialog trigger */}
+        {/* Add project dialog trigger */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className='ml-3' variant='outline'>
               <Plus className='mr-2 h-4 w-4' />
-              Add Worker
+              Add Project
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add a worker</DialogTitle>
-              <DialogDescription>Add a worker to the database.</DialogDescription>
+              <DialogTitle>Add a project</DialogTitle>
+              <DialogDescription>Add a project to the database.</DialogDescription>
             </DialogHeader>
-            <AddWorkerForm
-              onAddWorker={async worker => {
-                await addWorker(worker as Worker)
+            <AddProjectForm
+              onAddProject={async project => {
+                await addProject(project as Project)
                 setAddDialogOpen(false)
                 refreshTable(1)
               }}
@@ -586,22 +592,22 @@ export function WorkersDataTable() {
           </Button>
           <span className='text-muted-foreground ml-2 text-sm'>
             {pagination.total === 0
-              ? 'No workers found'
-              : `Showing ${workers.length} of ${pagination.total} workers`}
+              ? 'No projects found'
+              : `Showing ${projects.length} of ${pagination.total} projects`}
           </span>
         </div>
       </div>
 
       {/* Dialogs */}
-      {/* Edit worker dialog */}
-      <Dialog open={!!selectedWorker} onOpenChange={open => !open && setSelectedWorker(null)}>
+      {/* Edit project dialog */}
+      <Dialog open={!!selectedProject} onOpenChange={open => !open && setSelectedProject(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit worker</DialogTitle>
-            <DialogDescription>Modify worker information.</DialogDescription>
+            <DialogTitle>Edit project</DialogTitle>
+            <DialogDescription>Modify project information.</DialogDescription>
           </DialogHeader>
-          {selectedWorker && (
-            <EditWorkerForm worker={selectedWorker} onEditWorker={handleEditWorker} />
+          {selectedProject && (
+            <EditProjectForm project={selectedProject} onEditProject={handleEditProject} />
           )}
         </DialogContent>
       </Dialog>
@@ -611,8 +617,8 @@ export function WorkersDataTable() {
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleConfirmDelete}
-        title='Delete worker'
-        description={`Are you sure you want to delete ${workerToDelete?.name}? This action cannot be undone.`}
+        title='Delete project'
+        description={`Are you sure you want to delete ${projectToDelete?.name}? This action cannot be undone.`}
         confirmText='Delete'
         variant='destructive'
       />
@@ -621,8 +627,8 @@ export function WorkersDataTable() {
         isOpen={deleteMultipleConfirmOpen}
         onClose={() => setDeleteMultipleConfirmOpen(false)}
         onConfirm={handleDeleteMultiple}
-        title='Delete multiple workers'
-        description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} workers? This action cannot be undone.`}
+        title='Delete multiple projects'
+        description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} projects? This action cannot be undone.`}
         confirmText='Delete All'
         variant='destructive'
       />
