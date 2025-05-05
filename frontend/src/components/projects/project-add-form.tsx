@@ -41,12 +41,25 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
   })
 
   const onSubmit: SubmitHandler<ProjectFormValues> = async data => {
-    onAddProject(data)
-    reset()
+    try {
+      // Convert dates to ISO strings with time set to midnight UTC
+      const formattedData = {
+        ...data,
+        start_date: new Date(data.start_date + 'T00:00:00Z').toISOString(),
+        end_date: data.end_date ? new Date(data.end_date + 'T00:00:00Z').toISOString() : undefined
+      }
+
+      console.log('Submitting new project:', formattedData)
+      onAddProject(formattedData)
+      reset()
+    } catch (error) {
+      console.error('Error formatting project data:', error)
+      throw error
+    }
   }
 
   // We need this for the select component since it can't directly use register
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = (value: 'active' | 'completed' | 'on_hold' | 'cancelled') => {
     setValue('status', value)
   }
 

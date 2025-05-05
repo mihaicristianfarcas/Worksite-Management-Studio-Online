@@ -129,6 +129,7 @@ export const ProjectsAPI = {
 
   // Add a new project
   async create(project: Project): Promise<Project> {
+    console.log('Creating project:', project)
     const response = await fetch(`${API_URL}/projects`, {
       method: 'POST',
       headers: {
@@ -140,14 +141,18 @@ export const ProjectsAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       const errorMessage = errorData.error || 'Failed to add project'
+      console.error('Error creating project:', errorMessage)
       throw new Error(errorMessage)
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log('Project created:', data)
+    return data
   },
 
   // Update an existing project
   async update(project: Project): Promise<Project> {
+    console.log('Updating project:', project)
     const response = await fetch(`${API_URL}/projects/${project.id}`, {
       method: 'PUT',
       headers: {
@@ -159,14 +164,18 @@ export const ProjectsAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       const errorMessage = errorData.error || 'Failed to update project'
+      console.error('Error updating project:', errorMessage)
       throw new Error(errorMessage)
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log('Project updated:', data)
+    return data
   },
 
   // Delete a project
   async delete(id: string): Promise<void> {
+    console.log('Deleting project:', id)
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'DELETE'
     })
@@ -174,12 +183,15 @@ export const ProjectsAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       const errorMessage = errorData.error || 'Failed to delete project'
+      console.error('Error deleting project:', errorMessage)
       throw new Error(errorMessage)
     }
+    console.log('Project deleted successfully')
   },
 
   // Delete multiple projects
   async deleteMany(ids: string[]): Promise<void> {
+    console.log('Deleting multiple projects:', ids)
     // Create a promise for each delete operation
     const deletePromises = ids.map(async id => {
       const response = await fetch(`${API_URL}/projects/${id}`, {
@@ -205,11 +217,12 @@ export const ProjectsAPI = {
       .filter(Boolean)
 
     if (failures.length > 0) {
-      throw new Error(
-        `Failed to delete ${failures.length} projects: ${failures
-          .map(f => f?.error.message)
-          .join(', ')}`
-      )
+      const errorMessage = `Failed to delete ${failures.length} projects: ${failures
+        .map(f => f?.error.message)
+        .join(', ')}`
+      console.error('Error deleting multiple projects:', errorMessage)
+      throw new Error(errorMessage)
     }
+    console.log('Multiple projects deleted successfully')
   }
 }

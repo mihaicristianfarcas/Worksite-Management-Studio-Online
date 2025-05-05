@@ -34,9 +34,11 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
       id: project.id,
       name: project.name,
       description: project.description,
-      status: project.status,
-      start_date: project.start_date,
-      end_date: project.end_date,
+      status: project.status as 'active' | 'completed' | 'on_hold' | 'cancelled',
+      start_date: project.start_date
+        ? new Date(project.start_date).toISOString().split('T')[0]
+        : '',
+      end_date: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : '',
       created_at: project.created_at,
       updated_at: project.updated_at,
       deleted_at: project.deleted_at
@@ -44,14 +46,27 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
   })
 
   const onSubmit: SubmitHandler<ProjectFormValues> = async data => {
-    onEditProject({
-      ...project,
-      ...data
-    })
+    try {
+      // Convert dates to ISO strings with time set to midnight UTC
+      const formattedData = {
+        ...data,
+        start_date: new Date(data.start_date + 'T00:00:00Z').toISOString(),
+        end_date: data.end_date ? new Date(data.end_date + 'T00:00:00Z').toISOString() : undefined
+      }
+
+      console.log('Submitting project update:', formattedData)
+      onEditProject({
+        ...project,
+        ...formattedData
+      })
+    } catch (error) {
+      console.error('Error formatting project data:', error)
+      throw error
+    }
   }
 
   // We need this for the select component since it can't directly use register
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = (value: 'active' | 'completed' | 'on_hold' | 'cancelled') => {
     setValue('status', value)
   }
 

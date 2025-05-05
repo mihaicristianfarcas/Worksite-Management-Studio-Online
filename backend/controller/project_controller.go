@@ -32,6 +32,9 @@ func (c *ProjectController) GetAllProjects(ctx echo.Context) error {
 	if status := ctx.QueryParam("status"); status != "" {
 		filters["status"] = status
 	}
+	if search := ctx.QueryParam("search"); search != "" {
+		filters["search"] = search
+	}
 
 	sortBy := ctx.QueryParam("sort_by")
 	sortOrder := ctx.QueryParam("sort_order")

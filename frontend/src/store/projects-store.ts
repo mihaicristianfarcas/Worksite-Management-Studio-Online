@@ -43,13 +43,16 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       currentTime - state.lastFetchTime < cacheTime &&
       state.projects.length > 0
     ) {
+      console.log('Using cached projects data')
       return
     }
 
+    console.log('Fetching projects with filters:', filters, 'page:', page, 'pageSize:', pageSize)
     set({ loadingState: 'loading', error: null })
 
     try {
       const response = await ProjectsAPI.getAll(filters, { page, pageSize })
+      console.log('Projects fetched successfully:', response)
       set({
         projects: response.data,
         pagination: {
@@ -61,18 +64,22 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         lastFetchTime: currentTime
       })
     } catch (error) {
+      console.error('Error fetching projects:', error)
       set({
         loadingState: 'error',
         error: error instanceof Error ? error.message : 'Failed to fetch projects'
       })
+      throw error
     }
   },
 
   setFilters: (filters: ProjectFilters) => {
+    console.log('Setting project filters:', filters)
     set({ filters })
   },
 
   addProject: async (project: Project) => {
+    console.log('Adding new project:', project)
     set({ loadingState: 'loading', error: null })
 
     try {
@@ -80,6 +87,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const state = get()
       await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
     } catch (error) {
+      console.error('Error adding project:', error)
       set({
         loadingState: 'error',
         error: error instanceof Error ? error.message : 'Failed to add project'
@@ -89,6 +97,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   updateProject: async (project: Project) => {
+    console.log('Updating project:', project)
     set({ loadingState: 'loading', error: null })
 
     try {
@@ -96,6 +105,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const state = get()
       await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
     } catch (error) {
+      console.error('Error updating project:', error)
       set({
         loadingState: 'error',
         error: error instanceof Error ? error.message : 'Failed to update project'
@@ -105,6 +115,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   deleteProject: async (id: string) => {
+    console.log('Deleting project:', id)
     set({ loadingState: 'loading', error: null })
 
     try {
@@ -112,6 +123,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const state = get()
       await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
     } catch (error) {
+      console.error('Error deleting project:', error)
       set({
         loadingState: 'error',
         error: error instanceof Error ? error.message : 'Failed to delete project'
@@ -121,6 +133,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   deleteProjects: async (ids: string[]) => {
+    console.log('Deleting multiple projects:', ids)
     set({ loadingState: 'loading', error: null })
 
     try {
@@ -128,6 +141,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const state = get()
       await state.fetchProjects(state.filters, state.pagination.page, state.pagination.pageSize)
     } catch (error) {
+      console.error('Error deleting multiple projects:', error)
       set({
         loadingState: 'error',
         error: error instanceof Error ? error.message : 'Failed to delete projects'

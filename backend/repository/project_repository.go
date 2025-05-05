@@ -38,7 +38,17 @@ func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string
 
 	// Apply filters
 	for key, value := range filters {
-		query = query.Where(key+" = ?", value)
+		switch key {
+		case "search":
+			searchTerm := value.(string)
+			query = query.Where(
+				"name LIKE ? OR description LIKE ?",
+				"%"+searchTerm+"%",
+				"%"+searchTerm+"%",
+			)
+		default:
+			query = query.Where(key+" = ?", value)
+		}
 	}
 
 	// Apply sorting
