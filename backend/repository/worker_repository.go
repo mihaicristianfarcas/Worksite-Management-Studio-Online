@@ -39,6 +39,9 @@ func (r *WorkerRepository) GetAll(filters map[string]interface{}, sortBy string,
 	// Apply filters
 	for key, value := range filters {
 		switch key {
+		case "search":
+			searchTerm := value.(string)
+			query = query.Where("name LIKE ? OR position LIKE ?", "%"+searchTerm+"%", "%"+searchTerm+"%")
 		case "position":
 			query = query.Where("position = ?", value)
 		case "min_age":

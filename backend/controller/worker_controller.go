@@ -26,11 +26,39 @@ func NewWorkerController(repo *repository.WorkerRepository) *WorkerController {
 func (c *WorkerController) GetAllWorkers(ctx echo.Context) error {
 	// Get query parameters for filtering and sorting
 	filters := make(map[string]interface{})
-	if name := ctx.QueryParam("name"); name != "" {
-		filters["name"] = name
+
+	// Handle search term
+	if search := ctx.QueryParam("search"); search != "" {
+		filters["search"] = search
 	}
+
+	// Handle position filter
 	if position := ctx.QueryParam("position"); position != "" {
 		filters["position"] = position
+	}
+
+	// Handle age range filters
+	if minAge := ctx.QueryParam("min_age"); minAge != "" {
+		if age, err := strconv.Atoi(minAge); err == nil {
+			filters["min_age"] = age
+		}
+	}
+	if maxAge := ctx.QueryParam("max_age"); maxAge != "" {
+		if age, err := strconv.Atoi(maxAge); err == nil {
+			filters["max_age"] = age
+		}
+	}
+
+	// Handle salary range filters
+	if minSalary := ctx.QueryParam("min_salary"); minSalary != "" {
+		if salary, err := strconv.Atoi(minSalary); err == nil {
+			filters["min_salary"] = salary
+		}
+	}
+	if maxSalary := ctx.QueryParam("max_salary"); maxSalary != "" {
+		if salary, err := strconv.Atoi(maxSalary); err == nil {
+			filters["max_salary"] = salary
+		}
 	}
 
 	sortBy := ctx.QueryParam("sort_by")
