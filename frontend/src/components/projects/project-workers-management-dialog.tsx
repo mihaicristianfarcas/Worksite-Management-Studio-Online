@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Project, Worker } from '@/api/types'
-import { useProjectsStore } from '@/store/projects-store'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -14,6 +13,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Loader2 } from 'lucide-react'
+import { projectsService } from '@/services/projects.service'
 
 interface ProjectWorkersManagementDialogProps {
   project: Project | null
@@ -23,6 +23,10 @@ interface ProjectWorkersManagementDialogProps {
   onOpenChange?: (open: boolean) => void
 }
 
+/**
+ * A dialog for managing workers assigned to a project
+ * Allows assigning available workers and unassigning current workers
+ */
 const ProjectWorkersManagementDialog = ({
   project,
   onWorkerAssigned,
@@ -30,9 +34,9 @@ const ProjectWorkersManagementDialog = ({
   open: controlledOpen,
   onOpenChange
 }: ProjectWorkersManagementDialogProps) => {
+  // Local state
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const { assignWorker, unassignWorker, getAvailableWorkers } = useProjectsStore()
   const [loading, setLoading] = useState(false)
   const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([])
   const [localProject, setLocalProject] = useState<Project | null>(null)
@@ -61,12 +65,13 @@ const ProjectWorkersManagementDialog = ({
     }
   }, [project])
 
+  // Load available workers for the project
   const loadAvailableWorkers = useCallback(async () => {
     if (!open || !localProject?.id) return
 
     try {
       setLoading(true)
-      const workers = await getAvailableWorkers(localProject.id)
+      const workers = await projectsService.getAvailableWorkers(localProject.id)
       setAvailableWorkers(workers)
     } catch (err) {
       console.error('Error loading available workers:', err)
@@ -74,7 +79,7 @@ const ProjectWorkersManagementDialog = ({
     } finally {
       setLoading(false)
     }
-  }, [open, localProject?.id, getAvailableWorkers])
+  }, [open, localProject?.id])
 
   useEffect(() => {
     if (open && localProject?.id) {
@@ -82,31 +87,25 @@ const ProjectWorkersManagementDialog = ({
     }
   }, [open, localProject?.id, loadAvailableWorkers])
 
+  // Handle worker assignment
   const handleAssignWorker = async (workerId: number) => {
     if (!localProject?.id) return
 
     try {
-      await assignWorker(localProject.id, workerId)
+      // Update via API
+      const updatedProject = await projectsService.assignWorker(localProject.id, workerId)
       toast.success('Worker assigned to project')
 
-      // Mark that changes were made, but don't trigger parent refresh yet
+      // Mark that changes were made
       hasChanges.current = true
 
       // Update the available workers list
       await loadAvailableWorkers()
 
-      // Update local project workers
-      if (localProject && Array.isArray(localProject.workers)) {
-        const worker = availableWorkers.find(w => w.id === workerId)
-        if (worker) {
-          setLocalProject({
-            ...localProject,
-            workers: [...localProject.workers, worker]
-          })
-        }
-      }
+      // Update local project state with the returned project data
+      setLocalProject(updatedProject)
 
-      // Still call the callback if provided for any additional logic
+      // Call the callback if provided
       onWorkerAssigned?.()
     } catch (err) {
       console.error('Error assigning worker:', err)
@@ -114,28 +113,25 @@ const ProjectWorkersManagementDialog = ({
     }
   }
 
+  // Handle worker unassignment
   const handleUnassignWorker = async (workerId: number) => {
     if (!localProject?.id) return
 
     try {
-      await unassignWorker(localProject.id, workerId)
+      // Update via API
+      const updatedProject = await projectsService.unassignWorker(localProject.id, workerId)
       toast.success('Worker unassigned from project')
 
-      // Mark that changes were made, but don't trigger parent refresh yet
+      // Mark that changes were made
       hasChanges.current = true
 
       // Update the available workers list
       await loadAvailableWorkers()
 
-      // Update local project workers
-      if (localProject && Array.isArray(localProject.workers)) {
-        setLocalProject({
-          ...localProject,
-          workers: localProject.workers.filter(w => w.id !== workerId)
-        })
-      }
+      // Update local project with returned project data
+      setLocalProject(updatedProject)
 
-      // Still call the callback if provided for any additional logic
+      // Call the callback if provided
       onWorkerUnassigned?.()
     } catch (err) {
       console.error('Error unassigning worker:', err)

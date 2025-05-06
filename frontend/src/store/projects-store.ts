@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Project, ProjectFilters, Worker } from '@/api/types'
-import { projectApi } from '@/api/projects-api'
+import { projectsService } from '@/services/projects.service'
 
 interface ProjectsState {
   projects: Project[]
@@ -55,7 +55,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const response = await projectApi.getAll(filters, { page, pageSize })
+      const response = await projectsService.getAll(filters, { page, pageSize })
       console.log('Projects fetched successfully:', response)
       set({
         projects: response.data,
@@ -93,7 +93,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      await projectApi.create(project)
+      await projectsService.create(project)
       await get().refreshProjects()
     } catch (error) {
       console.error('Error adding project:', error)
@@ -110,7 +110,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const updatedProject = await projectApi.update(project.id, project)
+      const updatedProject = await projectsService.update(project.id, project)
       await get().refreshProjects()
       return updatedProject
     } catch (error) {
@@ -128,7 +128,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      await projectApi.delete(id)
+      await projectsService.delete(id)
       await get().refreshProjects()
     } catch (error) {
       console.error('Error deleting project:', error)
@@ -145,7 +145,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const updatedProject = await projectApi.assignWorker(projectId, workerId)
+      const updatedProject = await projectsService.assignWorker(projectId, workerId)
       set(state => ({
         projects: state.projects.map(p => (p.id === projectId ? updatedProject : p)),
         loadingState: 'idle'
@@ -166,7 +166,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const updatedProject = await projectApi.unassignWorker(projectId, workerId)
+      const updatedProject = await projectsService.unassignWorker(projectId, workerId)
       set(state => ({
         projects: state.projects.map(p => (p.id === projectId ? updatedProject : p)),
         loadingState: 'idle'
@@ -187,7 +187,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const workers = await projectApi.getAvailableWorkers(projectId)
+      const workers = await projectsService.getAvailableWorkers(projectId)
       set({ loadingState: 'idle' })
       return workers
     } catch (error) {
