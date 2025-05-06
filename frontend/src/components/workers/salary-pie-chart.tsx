@@ -1,6 +1,5 @@
 'use client'
-import * as React from 'react'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, RefreshCcw } from 'lucide-react'
 import { Label, Pie, PieChart } from 'recharts'
 import {
   Card,
@@ -10,67 +9,17 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent
-} from '@/components/ui/chart'
-import { useWorkersStore } from '@/store/workers-store'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Button } from '@/components/ui/button'
+import { useWorkersCharts } from '@/hooks/use-workers-charts'
 
 export function WorkersSalaryPieChart() {
-  // Get data and methods from store
-  const { workers, fetchWorkers } = useWorkersStore()
-
-  // Fetch workers data when the component mounts
-  React.useEffect(() => {
-    fetchWorkers()
-  }, [fetchWorkers])
-
-  // Transform worker data for the pie chart
-  const chartData = React.useMemo(() => {
-    if (!workers || workers.length === 0) return []
-
-    return workers.map((worker, index) => {
-      // Create a color palette using CSS variables
-      const colorIndex = index + 1
-      return {
-        name: worker.name,
-        salary: worker.salary,
-        fill: `var(--chart-${colorIndex})`
-      }
-    })
-  }, [workers])
-
-  // Create chart config from worker data
-  const chartConfig = React.useMemo(() => {
-    const config: ChartConfig = {
-      salary: {
-        label: 'Salary'
-      }
-    }
-
-    if (!workers || workers.length === 0) return config
-
-    workers.forEach((worker, index) => {
-      const colorIndex = index + 1
-      config[worker.name] = {
-        label: worker.name,
-        color: `hsl(var(--chart-${colorIndex}))`
-      }
-    })
-
-    return config
-  }, [workers])
-
-  // Calculate total salary
-  const totalSalary = React.useMemo(() => {
-    if (!workers || workers.length === 0) return 0
-    return workers.reduce((acc, curr) => acc + curr.salary, 0)
-  }, [workers])
+  // Get data from custom hook
+  const { chartData, chartConfig, isLoading, stats, refreshChartData } = useWorkersCharts()
+  const { totalSalary, averageSalary, highestPaidWorker, lowestPaidWorker } = stats
 
   // Display loading state or empty state if no data
-  if (!workers || workers.length === 0) {
+  if (chartData.length === 0) {
     return (
       <Card className='flex h-full flex-col'>
         <CardHeader className='items-center pb-2 text-center'>
@@ -79,18 +28,34 @@ export function WorkersSalaryPieChart() {
         </CardHeader>
         <CardContent className='flex flex-1 items-center justify-center'>
           <p className='text-muted-foreground'>
-            {!workers ? 'Loading worker data...' : 'No worker data available'}
+            {isLoading ? 'Loading worker data...' : 'No worker data available'}
           </p>
         </CardContent>
+        <CardFooter className='justify-center'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => refreshChartData()}
+            disabled={isLoading}
+          >
+            <RefreshCcw className='mr-2 h-4 w-4' />
+            Refresh Data
+          </Button>
+        </CardFooter>
       </Card>
     )
   }
 
   return (
     <Card className='flex h-full flex-col'>
-      <CardHeader className='items-center pb-2 text-center'>
-        <CardTitle>Workers Salary Distribution</CardTitle>
-        <CardDescription>Construction Team Overview</CardDescription>
+      <CardHeader className='flex flex-row items-center justify-between pb-2'>
+        <div className='text-center'>
+          <CardTitle>Workers Salary Distribution</CardTitle>
+          <CardDescription>Construction Team Overview</CardDescription>
+        </div>
+        <Button variant='ghost' size='sm' onClick={() => refreshChartData()} disabled={isLoading}>
+          <RefreshCcw className='h-4 w-4' />
+        </Button>
       </CardHeader>
       <CardContent className='flex-1 px-2 pb-0'>
         <ChartContainer
@@ -136,11 +101,15 @@ export function WorkersSalaryPieChart() {
       </CardContent>
       <CardFooter className='mt-auto flex-col gap-2 p-4 text-center text-sm'>
         <div className='flex items-center justify-center gap-2 font-medium leading-none'>
-          Average Salary: RON {workers.length ? (totalSalary / workers.length).toFixed(2) : '0.00'}{' '}
-          <TrendingUp className='h-4 w-4' />
+          Average Salary: RON {averageSalary.toFixed(2)} <TrendingUp className='h-4 w-4' />
         </div>
-        <div className='text-muted-foreground leading-none'>
-          Showing salary distribution across {workers.length} construction workers
+        <div className='text-muted-foreground flex w-full flex-col justify-center gap-2 sm:flex-row sm:gap-8'>
+          <span>
+            Lowest: {lowestPaidWorker.name}, RON {lowestPaidWorker.salary.toLocaleString()}
+          </span>
+          <span>
+            Highest: {highestPaidWorker.name}, RON {highestPaidWorker.salary.toLocaleString()}
+          </span>
         </div>
       </CardFooter>
     </Card>
