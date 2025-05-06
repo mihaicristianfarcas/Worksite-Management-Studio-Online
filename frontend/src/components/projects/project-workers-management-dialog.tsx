@@ -1,14 +1,8 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Project, Worker } from '@/api/types'
 import { useProjectsStore } from '@/store/projects-store'
 import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,43 +15,58 @@ import {
 } from '@/components/ui/table'
 import { Loader2 } from 'lucide-react'
 
-interface WorkerAssignmentDialogProps {
-  project: Project
+interface ProjectWorkersManagementDialogProps {
+  project: Project | null
   onWorkerAssigned?: () => void
   onWorkerUnassigned?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-const WorkerAssignmentDialog = ({
+const ProjectWorkersManagementDialog = ({
   project,
   onWorkerAssigned,
-  onWorkerUnassigned
-}: WorkerAssignmentDialogProps) => {
-  const [open, setOpen] = useState(false)
+  onWorkerUnassigned,
+  open: controlledOpen,
+  onOpenChange
+}: ProjectWorkersManagementDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const { assignWorker, unassignWorker, getAvailableWorkers } = useProjectsStore()
   const [loading, setLoading] = useState(false)
   const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([])
+  const [localProject, setLocalProject] = useState<Project | null>(null)
+  const hasChanges = useRef(false)
 
-  // Memoize the filtered workers to prevent unnecessary recalculations
-  const filteredAvailableWorkers = useMemo(() => {
-    return availableWorkers.filter(
-      worker =>
-        worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        worker.position.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [availableWorkers, searchTerm])
+  // Use controlled or uncontrolled open state
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (value: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(value)
+    }
 
-  // Memoize the assigned workers to prevent unnecessary recalculations
-  const assignedWorkers = useMemo(() => {
-    return project.workers || []
-  }, [project.workers])
+    // If dialog is closing and there were changes, notify parent
+    if (!value && hasChanges.current) {
+      hasChanges.current = false
+    }
+
+    onOpenChange?.(value)
+  }
+
+  // Keep track of the current project and create a local copy
+  useEffect(() => {
+    if (project) {
+      setLocalProject(project)
+    }
+  }, [project])
 
   const loadAvailableWorkers = useCallback(async () => {
-    if (!open) return
+    if (!open || !localProject?.id) return
 
     try {
       setLoading(true)
-      const workers = await getAvailableWorkers(project.id)
+      const workers = await getAvailableWorkers(localProject.id)
       setAvailableWorkers(workers)
     } catch (err) {
       console.error('Error loading available workers:', err)
@@ -65,22 +74,40 @@ const WorkerAssignmentDialog = ({
     } finally {
       setLoading(false)
     }
-  }, [open, project.id, getAvailableWorkers])
+  }, [open, localProject?.id, getAvailableWorkers])
 
   useEffect(() => {
-    if (open) {
+    if (open && localProject?.id) {
       loadAvailableWorkers()
     }
-  }, [open, loadAvailableWorkers])
+  }, [open, localProject?.id, loadAvailableWorkers])
 
   const handleAssignWorker = async (workerId: number) => {
+    if (!localProject?.id) return
+
     try {
-      await assignWorker(project.id, workerId)
+      await assignWorker(localProject.id, workerId)
       toast.success('Worker assigned to project')
-      onWorkerAssigned?.()
+
+      // Mark that changes were made, but don't trigger parent refresh yet
+      hasChanges.current = true
+
       // Update the available workers list
-      const workers = await getAvailableWorkers(project.id)
-      setAvailableWorkers(workers)
+      await loadAvailableWorkers()
+
+      // Update local project workers
+      if (localProject && Array.isArray(localProject.workers)) {
+        const worker = availableWorkers.find(w => w.id === workerId)
+        if (worker) {
+          setLocalProject({
+            ...localProject,
+            workers: [...localProject.workers, worker]
+          })
+        }
+      }
+
+      // Still call the callback if provided for any additional logic
+      onWorkerAssigned?.()
     } catch (err) {
       console.error('Error assigning worker:', err)
       toast.error('Failed to assign worker to project')
@@ -88,27 +115,58 @@ const WorkerAssignmentDialog = ({
   }
 
   const handleUnassignWorker = async (workerId: number) => {
+    if (!localProject?.id) return
+
     try {
-      await unassignWorker(project.id, workerId)
+      await unassignWorker(localProject.id, workerId)
       toast.success('Worker unassigned from project')
-      onWorkerUnassigned?.()
+
+      // Mark that changes were made, but don't trigger parent refresh yet
+      hasChanges.current = true
+
       // Update the available workers list
-      const workers = await getAvailableWorkers(project.id)
-      setAvailableWorkers(workers)
+      await loadAvailableWorkers()
+
+      // Update local project workers
+      if (localProject && Array.isArray(localProject.workers)) {
+        setLocalProject({
+          ...localProject,
+          workers: localProject.workers.filter(w => w.id !== workerId)
+        })
+      }
+
+      // Still call the callback if provided for any additional logic
+      onWorkerUnassigned?.()
     } catch (err) {
       console.error('Error unassigning worker:', err)
       toast.error('Failed to unassign worker from project')
     }
   }
 
+  // Filter workers based on search term
+  const filteredAvailableWorkers = availableWorkers.filter(
+    worker =>
+      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.position.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const filteredAssignedWorkers =
+    localProject?.workers?.filter(
+      worker =>
+        worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        worker.position.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || []
+
+  // Don't show the dialog if no project is selected
+  if (!localProject) {
+    return null
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant='outline'>Manage Workers</Button>
-      </DialogTrigger>
       <DialogContent className='max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>Manage Workers - {project.name}</DialogTitle>
+          <DialogTitle>Manage Workers - {localProject.name}</DialogTitle>
         </DialogHeader>
         <div className='space-y-4'>
           <div className='flex items-center space-x-2'>
@@ -118,7 +176,7 @@ const WorkerAssignmentDialog = ({
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className='grid grid-cols-2 gap-4'>
+          <div>
             <div>
               <h3 className='mb-2 text-lg font-semibold'>Available Workers</h3>
               <div className='rounded-md border'>
@@ -165,7 +223,7 @@ const WorkerAssignmentDialog = ({
               </div>
             </div>
             <div>
-              <h3 className='mb-2 text-lg font-semibold'>Assigned Workers</h3>
+              <h3 className='my-2 text-lg font-semibold'>Assigned Workers</h3>
               <div className='rounded-md border'>
                 <Table>
                   <TableHeader>
@@ -176,14 +234,14 @@ const WorkerAssignmentDialog = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {assignedWorkers.length === 0 ? (
+                    {filteredAssignedWorkers.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} className='text-muted-foreground text-center'>
                           No workers assigned to this project
                         </TableCell>
                       </TableRow>
                     ) : (
-                      assignedWorkers.map(worker => (
+                      filteredAssignedWorkers.map(worker => (
                         <TableRow key={worker.id}>
                           <TableCell className='font-medium'>{worker.name}</TableCell>
                           <TableCell>{worker.position}</TableCell>
@@ -210,4 +268,4 @@ const WorkerAssignmentDialog = ({
   )
 }
 
-export default WorkerAssignmentDialog
+export default ProjectWorkersManagementDialog

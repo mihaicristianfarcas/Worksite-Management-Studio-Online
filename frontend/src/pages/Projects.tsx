@@ -5,14 +5,15 @@ import {
   CarouselContent,
   CarouselItem,
   CarouselNext,
-  CarouselPrevious
+  CarouselPrevious,
+  type CarouselApi
 } from '@/components/ui/carousel'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Filter, Plus, RefreshCcwDot, Search, Trash2, Pencil } from 'lucide-react'
 import { ProjectFilters } from '@/api/types'
 import { useProjectsStore } from '@/store/projects-store'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
@@ -21,7 +22,7 @@ import { Project } from '@/api/types'
 import ProjectMap from '@/components/projects/site-map'
 import AddProjectForm from '@/components/projects/project-add-form'
 import EditProjectForm from '@/components/projects/project-edit-form'
-import WorkerAssignmentDialog from '@/components/projects/worker-assignment-dialog'
+import ProjectWorkersManagementDialog from '@/components/projects/project-workers-management-dialog'
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import {
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import React from 'react'
 
 export default function Projects() {
   const FIRST_PAGE = 1
@@ -49,6 +51,7 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [workerDialogOpen, setWorkerDialogOpen] = useState(false)
 
   // Store state
   const {
@@ -62,10 +65,65 @@ export default function Projects() {
     deleteProject
   } = useProjectsStore()
 
+  const [currentProject, setCurrentProject] = useState<Project | null>(null)
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null)
+  const [api, setApi] = useState<CarouselApi>()
+
   // Load projects when filters or pagination changes
   useEffect(() => {
     fetchProjects(filters, pagination.page, pagination.pageSize)
   }, [fetchProjects, filters, pagination.page, pagination.pageSize])
+
+  // Set initial current project when projects load
+  useEffect(() => {
+    if (projects.length > 0) {
+      if (currentProjectId) {
+        // Try to find the previously selected project
+        const previousProject = projects.find(p => p.id === currentProjectId)
+        if (previousProject) {
+          setCurrentProject(previousProject)
+
+          // Find the index of the previous project and scroll to it
+          if (api) {
+            const index = projects.findIndex(p => p.id === currentProjectId)
+            if (index !== -1) {
+              // Use setTimeout to ensure the carousel has rendered
+              setTimeout(() => {
+                api.scrollTo(index)
+              }, 0)
+            }
+          }
+        } else {
+          // If previous project not found, default to first project
+          setCurrentProject(projects[0])
+          setCurrentProjectId(projects[0].id)
+        }
+      } else if (!currentProject) {
+        // Initial load - set first project
+        setCurrentProject(projects[0])
+        setCurrentProjectId(projects[0].id)
+      }
+    }
+  }, [projects, currentProjectId, api, currentProject])
+
+  // Handle carousel changes to update current project
+  useEffect(() => {
+    if (!api) return
+
+    const handleSelect = () => {
+      const selectedIndex = api.selectedScrollSnap()
+      if (projects[selectedIndex]) {
+        setCurrentProject(projects[selectedIndex])
+        setCurrentProjectId(projects[selectedIndex].id)
+      }
+    }
+
+    api.on('select', handleSelect)
+
+    return () => {
+      api.off('select', handleSelect)
+    }
+  }, [api, projects])
 
   // Helper functions for filters
   const updateFilters = (updatedFilters: ProjectFilters) => {
@@ -109,7 +167,17 @@ export default function Projects() {
     const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
       if (value !== undefined && value !== '') {
         const typedKey = key as keyof ProjectFilters
-        acc[typedKey] = value as ProjectFilters[keyof ProjectFilters]
+
+        // Properly handle the sortOrder field which has a specific type
+        if (typedKey === 'sortOrder') {
+          // Only assign if it's a valid value
+          if (value === 'asc' || value === 'desc') {
+            acc[typedKey] = value as 'asc' | 'desc'
+          }
+        } else {
+          // For all other fields, assign the value directly
+          acc[typedKey] = value as string
+        }
       }
       return acc
     }, {} as ProjectFilters)
@@ -132,9 +200,19 @@ export default function Projects() {
     refreshCarousel(FIRST_PAGE)
   }
 
-  const refreshCarousel = (page = pagination.page) => {
-    fetchProjects(filters, page, pagination.pageSize)
-  }
+  // Optimized refresh function that preserves the current project
+  const refreshCarousel = useCallback(
+    (page = pagination.page) => {
+      const projectIdToKeep = currentProjectId
+
+      return fetchProjects(filters, page, pagination.pageSize).then(() => {
+        if (projectIdToKeep) {
+          setCurrentProjectId(projectIdToKeep)
+        }
+      })
+    },
+    [fetchProjects, filters, pagination.pageSize, currentProjectId]
+  )
 
   // Project CRUD operations
   const handleAddProject = async (
@@ -143,7 +221,7 @@ export default function Projects() {
     try {
       await addProject(project as Project)
       setAddDialogOpen(false)
-      refreshCarousel(FIRST_PAGE)
+      refreshCarousel()
       toast.success('Project added successfully')
     } catch (err) {
       console.error('Error adding project:', err)
@@ -192,6 +270,11 @@ export default function Projects() {
     { id: 'endDateFrom', label: 'End Date From', type: 'date' },
     { id: 'endDateTo', label: 'End Date To', type: 'date' }
   ]
+
+  // Handler for worker management
+  const handleWorkerManagementClose = () => {
+    refreshCarousel()
+  }
 
   return (
     <>
@@ -288,10 +371,17 @@ export default function Projects() {
               <AddProjectForm onAddProject={handleAddProject} />
             </DialogContent>
           </Dialog>
+
+          {/* Worker Management Button */}
+          {currentProject && (
+            <Button variant='outline' onClick={() => setWorkerDialogOpen(true)}>
+              Manage Workers for {currentProject.name}
+            </Button>
+          )}
         </div>
 
         {/* Project Carousel */}
-        <Carousel className='mx-auto w-[90%]'>
+        <Carousel className='mx-auto w-[90%]' setApi={setApi}>
           <CarouselContent>
             {loadingState === 'loading' ? (
               <CarouselItem>
@@ -355,18 +445,9 @@ export default function Projects() {
                   </div>
 
                   {/* Project Workers Table and Map */}
-                  <div className='grid grid-cols-2 items-center justify-between p-2'>
+                  <div className='grid grid-cols-2 items-center justify-between gap-3 p-2'>
                     <div className='space-y-4'>
                       <ProjectWorkersTable project={project} />
-                      <WorkerAssignmentDialog
-                        project={project}
-                        onWorkerAssigned={() => {
-                          // The store will handle the update
-                        }}
-                        onWorkerUnassigned={() => {
-                          // The store will handle the update
-                        }}
-                      />
                     </div>
                     <ProjectMap project={project} />
                   </div>
@@ -391,6 +472,18 @@ export default function Projects() {
             </>
           )}
         </Carousel>
+
+        {/* Worker Assignment Dialog */}
+        <ProjectWorkersManagementDialog
+          project={currentProject}
+          open={workerDialogOpen}
+          onOpenChange={open => {
+            setWorkerDialogOpen(open)
+            if (!open) {
+              handleWorkerManagementClose()
+            }
+          }}
+        />
 
         {/* Edit Project Dialog */}
         {selectedProject && (
@@ -421,38 +514,6 @@ export default function Projects() {
           confirmText='Delete'
           variant='destructive'
         />
-
-        {/* Pagination Info */}
-        <div className='flex items-center justify-end space-x-2 py-2'>
-          <div className='text-muted-foreground flex-1 text-sm'>
-            {pagination.total === 0 ? 'No projects found' : `Total: ${pagination.total} projects`}
-          </div>
-          <div className='flex items-center space-x-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => refreshCarousel(pagination.page - 1)}
-              disabled={pagination.page <= 1 || pagination.total === 0}
-            >
-              Previous
-            </Button>
-            <span className='text-muted-foreground text-sm'>
-              {pagination.total === 0
-                ? 'No results'
-                : `Page ${pagination.page} of ${Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}`}
-            </span>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => refreshCarousel(pagination.page + 1)}
-              disabled={
-                pagination.page * pagination.pageSize >= pagination.total || pagination.total === 0
-              }
-            >
-              Next
-            </Button>
-          </div>
-        </div>
       </div>
     </>
   )
