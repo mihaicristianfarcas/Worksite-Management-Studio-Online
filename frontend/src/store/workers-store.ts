@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import { WorkersAPI } from '@/api/workers-api'
 import { Worker, WorkerFilters } from '@/api/types'
 import { toast } from 'sonner'
+import { workersService } from '@/services/workers.service'
 
 // Enhanced loading state type
 type LoadingState = 'idle' | 'loading' | 'success' | 'error'
@@ -77,7 +77,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       }
 
       console.log('Fetching with pagination:', paginationParams)
-      const result = await WorkersAPI.getAll(filters, paginationParams)
+      const result = await workersService.getAll(filters, paginationParams)
       console.log('API result:', result)
 
       set({
@@ -108,7 +108,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   addWorker: async (worker: Worker) => {
     set({ loadingState: 'loading', error: null })
     try {
-      const newWorker = await WorkersAPI.create(worker)
+      const newWorker = await workersService.create(worker)
       set(state => ({
         workers: [...state.workers, newWorker],
         loadingState: 'success'
@@ -130,7 +130,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   updateWorker: async (worker: Worker) => {
     set({ loadingState: 'loading', error: null })
     try {
-      const updatedWorker = await WorkersAPI.update(worker)
+      const updatedWorker = await workersService.update(worker)
       set(state => ({
         workers: state.workers.map(w => (w.id === updatedWorker.id ? updatedWorker : w)),
         loadingState: 'success'
@@ -152,7 +152,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   deleteWorker: async (id: number) => {
     set({ loadingState: 'loading', error: null })
     try {
-      await WorkersAPI.delete(id)
+      await workersService.delete(id)
       set(state => ({
         workers: state.workers.filter(w => w.id !== id),
         loadingState: 'success'
@@ -173,7 +173,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   deleteWorkers: async (ids: number[]) => {
     set({ loadingState: 'loading', error: null })
     try {
-      await WorkersAPI.deleteMany(ids)
+      await workersService.deleteMany(ids)
       set(state => ({
         workers: state.workers.filter(w => !ids.includes(w.id)),
         loadingState: 'success'

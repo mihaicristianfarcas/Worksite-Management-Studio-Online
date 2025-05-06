@@ -10,7 +10,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { useProjectsManagement } from '@/hooks/useProjectsManagement'
+import { useProjectsManagement } from '@/hooks/use-projects-management'
 import ProjectCarousel from '@/components/projects/project-carousel'
 import ProjectDetails from '@/components/projects/project-details'
 import ProjectFiltersBar from '@/components/projects/project-filters'

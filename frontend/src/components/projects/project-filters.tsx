@@ -23,13 +23,7 @@ interface ProjectFiltersBarProps {
   currentProjectName?: string
 }
 
-const filterFields = [
-  { id: 'status', label: 'Status', type: 'text' },
-  { id: 'startDateFrom', label: 'Start Date From', type: 'date' },
-  { id: 'startDateTo', label: 'Start Date To', type: 'date' },
-  { id: 'endDateFrom', label: 'End Date From', type: 'date' },
-  { id: 'endDateTo', label: 'End Date To', type: 'date' }
-]
+const filterFields = [{ id: 'status', label: 'Status', type: 'text' }]
 
 /**
  * Toolbar component with search, filters, and add project button

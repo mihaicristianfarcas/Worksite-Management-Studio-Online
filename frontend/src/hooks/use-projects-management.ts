@@ -96,15 +96,7 @@ export function useProjectsManagement() {
       const { name, value } = e.target
       const updatedFilters = {
         ...tempFilters,
-        [name]:
-          value === ''
-            ? undefined
-            : name === 'startDateFrom' ||
-                name === 'startDateTo' ||
-                name === 'endDateFrom' ||
-                name === 'endDateTo'
-              ? value // Keep date strings as is
-              : value
+        [name]: value
       } as Partial<ProjectFilters>
       setTempFilters(updatedFilters)
     },
