@@ -46,6 +46,7 @@ export default function Projects() {
     handleFilterChange,
     handleApplyFilters,
     resetFilters,
+    handleSortChange,
 
     // CRUD operations
     handleAddProject,
@@ -93,6 +94,7 @@ export default function Projects() {
           onAddProject={handleOpenAddDialog}
           onManageWorkers={handleManageWorkers}
           currentProjectName={currentProject?.name}
+          onSortChange={handleSortChange}
         />
 
         {/* Project Carousel */}

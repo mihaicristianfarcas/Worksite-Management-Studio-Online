@@ -76,6 +76,29 @@ export function useProjectsManagement() {
     [setStoreFilters]
   )
 
+  // Optimized refresh function that preserves the current project
+  const refreshCarousel = useCallback(
+    (page = pagination.page, forceRefresh = false) => {
+      const projectIdToKeep = currentProjectId
+
+      // Always fetch from server when forceRefresh is true
+      if (forceRefresh) {
+        return fetchProjects(filters, page, pagination.pageSize).then(() => {
+          if (projectIdToKeep) {
+            setCurrentProjectId(projectIdToKeep)
+          }
+        })
+      }
+
+      return fetchProjects(filters, page, pagination.pageSize).then(() => {
+        if (projectIdToKeep) {
+          setCurrentProjectId(projectIdToKeep)
+        }
+      })
+    },
+    [fetchProjects, pagination.pageSize, currentProjectId, filters, pagination.page]
+  )
+
   // Search functionality
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value)
@@ -87,8 +110,24 @@ export function useProjectsManagement() {
       search: searchTerm.trim() || undefined
     }
     updateFilters(updatedFilters)
-    refreshCarousel(FIRST_PAGE)
-  }, [filters, searchTerm, updateFilters])
+    // Force refresh when search term changes
+    refreshCarousel(FIRST_PAGE, true)
+  }, [filters, searchTerm, updateFilters, refreshCarousel])
+
+  // Sorting functionality
+  const handleSortChange = useCallback(
+    (field: string, order: 'asc' | 'desc') => {
+      const updatedFilters = {
+        ...filters,
+        sortBy: field || undefined,
+        sortOrder: order || undefined
+      }
+      updateFilters(updatedFilters)
+      // Force refresh when sorting changes
+      refreshCarousel(FIRST_PAGE, true)
+    },
+    [filters, updateFilters, refreshCarousel]
+  )
 
   // Filter functionality
   const handleFilterChange = useCallback(
@@ -127,32 +166,26 @@ export function useProjectsManagement() {
       cleanedFilters.search = filters.search
     }
 
+    // Preserve sorting when applying filters
+    if (filters.sortBy) {
+      cleanedFilters.sortBy = filters.sortBy
+      cleanedFilters.sortOrder = filters.sortOrder
+    }
+
     updateFilters(cleanedFilters)
     setFilterPopoverOpen(false)
-    refreshCarousel(FIRST_PAGE)
-  }, [tempFilters, filters.search, updateFilters])
+    // Force refresh when filters are applied
+    refreshCarousel(FIRST_PAGE, true)
+  }, [tempFilters, filters, updateFilters, refreshCarousel])
 
   const resetFilters = useCallback(() => {
     setTempFilters({})
     setSearchTerm('')
     updateFilters({})
     setFilterPopoverOpen(false)
-    refreshCarousel(FIRST_PAGE)
-  }, [updateFilters])
-
-  // Optimized refresh function that preserves the current project
-  const refreshCarousel = useCallback(
-    (page = pagination.page) => {
-      const projectIdToKeep = currentProjectId
-
-      return fetchProjects(filters, page, pagination.pageSize).then(() => {
-        if (projectIdToKeep) {
-          setCurrentProjectId(projectIdToKeep)
-        }
-      })
-    },
-    [fetchProjects, pagination.pageSize, currentProjectId, filters, pagination.page]
-  )
+    // Force refresh when filters are reset
+    refreshCarousel(FIRST_PAGE, true)
+  }, [updateFilters, refreshCarousel])
 
   // Project CRUD operations
   const handleAddProject = useCallback(
@@ -260,6 +293,7 @@ export function useProjectsManagement() {
     handleFilterChange,
     handleApplyFilters,
     resetFilters,
+    handleSortChange,
 
     // CRUD operations
     handleAddProject,

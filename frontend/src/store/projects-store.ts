@@ -41,11 +41,25 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     const currentTime = Date.now()
     const cacheTime = 5000 // 5 seconds cache
 
-    // Check if we have cached data that's still valid
+    // Generate a cache key based on filters to invalidate cache when sorting changes
+    const filterKey = JSON.stringify({
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+      search: filters.search,
+      status: filters.status
+    })
+
+    // Check if we have cached data that's still valid and if filter parameters haven't changed
     if (
       state.lastFetchTime &&
       currentTime - state.lastFetchTime < cacheTime &&
-      state.projects.length > 0
+      state.projects.length > 0 &&
+      JSON.stringify({
+        sortBy: state.filters.sortBy,
+        sortOrder: state.filters.sortOrder,
+        search: state.filters.search,
+        status: state.filters.status
+      }) === filterKey
     ) {
       console.log('Using cached projects data')
       return state.projects
@@ -65,7 +79,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           total: response.total
         },
         loadingState: 'idle',
-        lastFetchTime: currentTime
+        lastFetchTime: currentTime,
+        filters // Store the current filters
       })
       return response.data
     } catch (error) {

@@ -5,6 +5,13 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Filter, Plus, RefreshCcwDot, Search } from 'lucide-react'
 import React from 'react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 
 interface ProjectFiltersBarProps {
   searchTerm: string
@@ -21,6 +28,7 @@ interface ProjectFiltersBarProps {
   onAddProject: () => void
   onManageWorkers?: () => void
   currentProjectName?: string
+  onSortChange?: (field: string, order: 'asc' | 'desc') => void
 }
 
 const filterFields = [{ id: 'status', label: 'Status', type: 'text' }]
@@ -42,10 +50,27 @@ const ProjectFiltersBar = ({
   onFilterPopoverChange,
   onAddProject,
   onManageWorkers,
-  currentProjectName
+  currentProjectName,
+  onSortChange
 }: ProjectFiltersBarProps) => {
+  // Function to handle sort selection
+  const handleSortChange = (value: string) => {
+    if (!value || !onSortChange) return
+
+    const [field, order] = value.split('-')
+    onSortChange(field, order as 'asc' | 'desc')
+  }
+
+  // Get current sort value for Select default
+  const getCurrentSortValue = () => {
+    if (filters.sortBy && filters.sortOrder) {
+      return `${filters.sortBy}-${filters.sortOrder}`
+    }
+    return ''
+  }
+
   return (
-    <div className='flex items-center gap-4'>
+    <div className='flex flex-wrap items-center gap-4'>
       {/* Search Input with Button */}
       <div className='flex max-w-sm items-center'>
         <Input
@@ -59,6 +84,19 @@ const ProjectFiltersBar = ({
           <Search className='h-4 w-4' />
         </Button>
       </div>
+
+      {/* Sort By Select */}
+      <Select value={getCurrentSortValue()} onValueChange={handleSortChange}>
+        <SelectTrigger className='w-[180px]'>
+          <SelectValue placeholder='Sort by...' />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value='name-asc'>Name A-Z</SelectItem>
+          <SelectItem value='name-desc'>Name Z-A</SelectItem>
+          <SelectItem value='start_date-asc'>Date (Oldest first)</SelectItem>
+          <SelectItem value='start_date-desc'>Date (Newest first)</SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Refresh Button */}
       <Button
@@ -78,7 +116,11 @@ const ProjectFiltersBar = ({
             Filter
             {Object.keys(filters).length > 0 && (
               <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
-                {Object.keys(filters).filter(key => key !== 'search').length}
+                {
+                  Object.keys(filters).filter(
+                    key => key !== 'search' && key !== 'sortBy' && key !== 'sortOrder'
+                  ).length
+                }
               </span>
             )}
           </Button>
