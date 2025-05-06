@@ -211,7 +211,7 @@ export default function Projects() {
         }
       })
     },
-    [fetchProjects, filters, pagination.pageSize, currentProjectId]
+    [fetchProjects, pagination.pageSize, currentProjectId]
   )
 
   // Project CRUD operations
@@ -447,6 +447,7 @@ export default function Projects() {
                   {/* Project Workers Table and Map */}
                   <div className='grid grid-cols-2 items-center justify-between gap-3 p-2'>
                     <div className='space-y-4'>
+                      <h2 className='text-lg font-medium'>Assigned workers to {project.name}</h2>
                       <ProjectWorkersTable project={project} />
                     </div>
                     <ProjectMap project={project} />
