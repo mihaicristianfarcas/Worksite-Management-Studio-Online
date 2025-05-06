@@ -5,6 +5,7 @@ import { ProjectSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Select,
   SelectContent,
@@ -13,6 +14,8 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Project } from '@/api/types'
+import { useState } from 'react'
+import { format } from 'date-fns'
 
 type ProjectFormValues = z.infer<typeof ProjectSchema>
 
@@ -22,6 +25,13 @@ interface EditProjectFormProps {
 }
 
 export default function EditProjectForm({ project, onEditProject }: EditProjectFormProps) {
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    project.start_date ? new Date(project.start_date) : undefined
+  )
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    project.end_date ? new Date(project.end_date) : undefined
+  )
+
   const {
     register,
     handleSubmit,
@@ -35,10 +45,8 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
       name: project.name,
       description: project.description,
       status: project.status as 'active' | 'completed' | 'on_hold' | 'cancelled',
-      start_date: project.start_date
-        ? new Date(project.start_date).toISOString().split('T')[0]
-        : '',
-      end_date: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : '',
+      start_date: project.start_date || '',
+      end_date: project.end_date || '',
       latitude: project.latitude || 0,
       longitude: project.longitude || 0,
       created_at: project.created_at,
@@ -49,11 +57,10 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
 
   const onSubmit: SubmitHandler<ProjectFormValues> = async data => {
     try {
-      // Convert dates to ISO strings with time set to midnight UTC
       const formattedData = {
         ...data,
-        start_date: new Date(data.start_date + 'T00:00:00Z').toISOString(),
-        end_date: data.end_date ? new Date(data.end_date + 'T00:00:00Z').toISOString() : undefined
+        start_date: startDate ? startDate.toISOString() : undefined,
+        end_date: endDate ? endDate.toISOString() : undefined
       }
 
       console.log('Submitting project update:', formattedData)
@@ -67,14 +74,23 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
     }
   }
 
-  // We need this for the select component since it can't directly use register
   const handleStatusChange = (value: 'active' | 'completed' | 'on_hold' | 'cancelled') => {
     setValue('status', value)
   }
 
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date)
+    setValue('start_date', date ? date.toISOString() : '')
+  }
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    setEndDate(date)
+    setValue('end_date', date ? date.toISOString() : '')
+  }
+
   return (
-    <section className='relative isolate'>
-      <form onSubmit={handleSubmit(onSubmit)} className='mt-4 lg:flex-auto' noValidate>
+    <section className='relative isolate z-0'>
+      <form onSubmit={handleSubmit(onSubmit)} className='mt-4 space-y-6 lg:flex-auto' noValidate>
         <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
           {/* Name */}
           <div>
@@ -108,28 +124,38 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
 
           {/* Start Date */}
           <div>
-            <Input id='start_date' type='date' {...register('start_date')} />
+            <label className='mb-1 block text-sm font-medium'>Start Date</label>
+            <Calendar
+              mode='single'
+              selected={startDate}
+              onSelect={handleStartDateChange}
+              initialFocus
+            />
+            {startDate && (
+              <p className='ml-1 mt-1 text-xs text-gray-500'>
+                Selected: {format(startDate, 'PPP')}
+              </p>
+            )}
             {errors.start_date?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.start_date.message}</p>
             )}
-            <p className='ml-1 mt-1 text-xs text-gray-500'>Select the project start date</p>
           </div>
 
           {/* End Date */}
           <div>
-            <Input
-              id='end_date'
-              type='date'
-              {...register('end_date')}
-              value={watch('end_date') || ''}
-              onChange={e => setValue('end_date', e.target.value || undefined)}
+            <label className='mb-1 block text-sm font-medium'>End Date</label>
+            <Calendar
+              mode='single'
+              selected={endDate}
+              onSelect={handleEndDateChange}
+              initialFocus
             />
+            {endDate && (
+              <p className='ml-1 mt-1 text-xs text-gray-500'>Selected: {format(endDate, 'PPP')}</p>
+            )}
             {errors.end_date?.message && (
               <p className='ml-1 mt-2 text-sm text-rose-400'>{errors.end_date.message}</p>
             )}
-            <p className='ml-1 mt-1 text-xs text-gray-500'>
-              Select the project end date (if known)
-            </p>
           </div>
 
           {/* Latitude */}
@@ -164,7 +190,7 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
         </div>
 
         {/* Description - Full Width */}
-        <div className='mt-4'>
+        <div>
           <Textarea
             id='description'
             placeholder='Project description'
@@ -180,7 +206,7 @@ export default function EditProjectForm({ project, onEditProject }: EditProjectF
         </div>
 
         {/* Submit */}
-        <Button className='mt-4 w-full' type='submit' disabled={isSubmitting}>
+        <Button className='w-full' type='submit' disabled={isSubmitting}>
           {isSubmitting ? 'Updating...' : 'Update Project'}
         </Button>
       </form>
