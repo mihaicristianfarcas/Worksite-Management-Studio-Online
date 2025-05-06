@@ -218,7 +218,9 @@ export function WorkersDataTable() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(worker.id)}>
+                <DropdownMenuItem
+                  onClick={() => navigator.clipboard.writeText(worker.id.toString())}
+                >
                   Copy worker ID
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -460,7 +462,7 @@ export function WorkersDataTable() {
         {/* Add worker dialog trigger */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='ml-3' variant='outline'>
+            <Button className='ml-3'>
               <Plus className='mr-2 h-4 w-4' />
               Add Worker
             </Button>
@@ -470,13 +472,7 @@ export function WorkersDataTable() {
               <DialogTitle>Add a worker</DialogTitle>
               <DialogDescription>Add a worker to the database.</DialogDescription>
             </DialogHeader>
-            <AddWorkerForm
-              onAddWorker={async worker => {
-                await addWorker(worker as Worker)
-                setAddDialogOpen(false)
-                refreshTable(FIRST_PAGE)
-              }}
-            />
+            <AddWorkerForm onAddWorker={handleAddWorker} />
           </DialogContent>
         </Dialog>
 

@@ -25,8 +25,8 @@ interface WorkersState {
   setFilters: (filters: WorkerFilters) => void
   addWorker: (worker: Worker) => Promise<Worker>
   updateWorker: (worker: Worker) => Promise<Worker>
-  deleteWorker: (id: string) => Promise<void>
-  deleteWorkers: (ids: string[]) => Promise<void>
+  deleteWorker: (id: number) => Promise<void>
+  deleteWorkers: (ids: number[]) => Promise<void>
   resetError: () => void
 }
 
@@ -149,7 +149,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     }
   },
 
-  deleteWorker: async (id: string) => {
+  deleteWorker: async (id: number) => {
     set({ loadingState: 'loading', error: null })
     try {
       await WorkersAPI.delete(id)
@@ -170,7 +170,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     }
   },
 
-  deleteWorkers: async (ids: string[]) => {
+  deleteWorkers: async (ids: number[]) => {
     set({ loadingState: 'loading', error: null })
     try {
       await WorkersAPI.deleteMany(ids)

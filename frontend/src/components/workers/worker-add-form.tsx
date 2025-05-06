@@ -4,14 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
-import { Worker } from '@/api/workers-api'
-
+import { Worker } from '@/api/types'
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
 interface AddWorkerFormProps {
-  onAddWorker: (
-    worker: Omit<Worker, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'projects'>
-  ) => void
+  onAddWorker: (worker: Worker) => Promise<void>
 }
 
 export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
@@ -31,7 +28,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    onAddWorker(data)
+    await onAddWorker({ ...data, id: 0 }) // id will be set by backend
     reset()
   }
 

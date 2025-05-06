@@ -134,7 +134,7 @@ export const WorkersAPI = {
   },
 
   // Delete a worker
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/workers/${id}`, {
       method: 'DELETE'
     })
@@ -147,7 +147,7 @@ export const WorkersAPI = {
   },
 
   // Delete multiple workers
-  async deleteMany(ids: string[]): Promise<void> {
+  async deleteMany(ids: number[]): Promise<void> {
     // Create a promise for each delete operation
     const deletePromises = ids.map(async id => {
       const response = await fetch(`${API_URL}/workers/${id}`, {
