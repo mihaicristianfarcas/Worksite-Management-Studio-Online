@@ -55,14 +55,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 // Worker-specific components
-import AddWorkerForm from '@/components/workers/add-form'
-import EditWorkerForm from '@/components/workers/edit-form'
+import AddWorkerForm from '@/components/workers/worker-add-form'
+import EditWorkerForm from '@/components/workers/worker-edit-form'
 
 // API and store
-import { Worker, WorkerFilters } from '@/api/workers-api'
+import { Worker, WorkerFilters } from '@/api/types'
 import { useWorkersStore } from '@/store/workers-store'
 
 export function WorkersDataTable() {
+  const FIRST_PAGE = 1
+
   // Table state
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
@@ -216,7 +218,9 @@ export function WorkersDataTable() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(worker.id)}>
+                <DropdownMenuItem
+                  onClick={() => navigator.clipboard.writeText(worker.id.toString())}
+                >
                   Copy worker ID
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -287,20 +291,39 @@ export function WorkersDataTable() {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(row => row.original.id)
     deleteWorkers(selectedIds)
     setRowSelection({})
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
     setDeleteMultipleConfirmOpen(false)
   }
 
   const handleAddWorker = async (worker: Worker) => {
     await addWorker(worker)
     setAddDialogOpen(false)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const handleEditWorker = async (worker: Worker) => {
     await updateWorker(worker)
     setSelectedWorker(null)
     refreshTable()
+  }
+
+  // Helper functions
+  const updateFilters = (updatedFilters: WorkerFilters) => {
+    setFilters(updatedFilters)
+    setStoreFilters(updatedFilters)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+  }
+
+  const handleSearch = () => {
+    const updatedFilters = {
+      ...filters,
+      search: searchTerm.trim() || undefined
+    }
+    updateFilters(updatedFilters)
+    refreshTable(FIRST_PAGE)
   }
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,43 +336,30 @@ export function WorkersDataTable() {
           : name.includes('Age') || name.includes('Salary')
             ? Number(value)
             : value
-    }
-
+    } as Partial<WorkerFilters>
     setTempFilters(updatedFilters)
   }
 
   const handleApplyFilters = () => {
-    updateFilters(tempFilters)
+    const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== '') {
+        const typedKey = key as keyof WorkerFilters
+        acc[typedKey] = value as WorkerFilters[keyof WorkerFilters]
+      }
+      return acc
+    }, {} as WorkerFilters)
+
+    updateFilters(cleanedFilters)
     setFilterPopoverOpen(false)
-    refreshTable(1)
-  }
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value)
-  }
-
-  const handleSearch = () => {
-    const updatedFilters = searchTerm.trim()
-      ? { ...filters, search: searchTerm.trim() }
-      : { ...filters }
-
-    if (!searchTerm.trim()) delete updatedFilters.search
-
-    updateFilters(updatedFilters)
-    refreshTable(1)
-  }
-
-  // Helper functions
-  const updateFilters = (updatedFilters: WorkerFilters) => {
-    setFilters(updatedFilters)
-    setStoreFilters(updatedFilters)
+    refreshTable(FIRST_PAGE)
   }
 
   const resetFilters = () => {
     setTempFilters({})
+    setSearchTerm('')
     updateFilters({})
     setFilterPopoverOpen(false)
-    refreshTable(1)
+    refreshTable(FIRST_PAGE)
   }
 
   const refreshTable = (page = pagination.page) => {
@@ -358,10 +368,10 @@ export function WorkersDataTable() {
 
   // Filter fields for popover
   const filterFields = [
-    { id: 'minAge', label: 'Min Age', type: 'number' },
-    { id: 'maxAge', label: 'Max Age', type: 'number' },
-    { id: 'minSalary', label: 'Min Salary', type: 'number' },
-    { id: 'maxSalary', label: 'Max Salary', type: 'number' },
+    { id: 'minAge', label: 'Min Age', type: 'number', min: 18, max: 100 },
+    { id: 'maxAge', label: 'Max Age', type: 'number', min: 18, max: 100 },
+    { id: 'minSalary', label: 'Min Salary', type: 'number', min: 0, step: 1 },
+    { id: 'maxSalary', label: 'Max Salary', type: 'number', min: 0, step: 1 },
     { id: 'position', label: 'Position', type: 'text' }
   ]
 
@@ -375,6 +385,7 @@ export function WorkersDataTable() {
             placeholder='Search workers...'
             value={searchTerm}
             onChange={e => handleSearchChange(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
             className='rounded-r-none'
           />
           <Button variant='outline' className='rounded-l-none border-l-0' onClick={handleSearch}>
@@ -388,16 +399,11 @@ export function WorkersDataTable() {
           variant='outline'
           onClick={() => {
             resetFilters()
-            setSearchTerm('')
             setRowSelection({})
             setGlobalFilter('')
             setSorting([])
             setColumnVisibility({})
-            setFilters({})
-            setTempFilters({})
-            setStoreFilters({})
-            setFilterPopoverOpen(false)
-            refreshTable(1)
+            refreshTable(FIRST_PAGE)
           }}
           disabled={loadingState === 'loading'}
         >
@@ -410,6 +416,11 @@ export function WorkersDataTable() {
             <Button className='ml-3' variant='outline'>
               <Filter className='mr-2 h-4 w-4' />
               Filter
+              {Object.keys(filters).length > 0 && (
+                <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
+                  {Object.keys(filters).length}
+                </span>
+              )}
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-80'>
@@ -431,6 +442,9 @@ export function WorkersDataTable() {
                       className='col-span-2'
                       value={tempFilters[field.id as keyof WorkerFilters] || ''}
                       onChange={handleFilterChange}
+                      min={field.min}
+                      max={field.max}
+                      step={field.step}
                     />
                   </div>
                 ))}
@@ -448,7 +462,7 @@ export function WorkersDataTable() {
         {/* Add worker dialog trigger */}
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className='ml-3' variant='outline'>
+            <Button className='ml-3'>
               <Plus className='mr-2 h-4 w-4' />
               Add Worker
             </Button>
@@ -549,23 +563,29 @@ export function WorkersDataTable() {
             variant='outline'
             size='sm'
             onClick={() => refreshTable(pagination.page - 1)}
-            disabled={pagination.page <= 1}
+            disabled={pagination.page <= 1 || pagination.total === 0}
           >
             Previous
           </Button>
           <span className='text-muted-foreground text-sm'>
-            Page {pagination.page} of {Math.ceil(pagination.total / pagination.pageSize)}
+            {pagination.total === 0
+              ? 'No results'
+              : `Page ${pagination.page} of ${Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}`}
           </span>
           <Button
             variant='outline'
             size='sm'
             onClick={() => refreshTable(pagination.page + 1)}
-            disabled={pagination.page * pagination.pageSize >= pagination.total}
+            disabled={
+              pagination.page * pagination.pageSize >= pagination.total || pagination.total === 0
+            }
           >
             Next
           </Button>
           <span className='text-muted-foreground ml-2 text-sm'>
-            Showing {workers.length} of {pagination.total} workers
+            {pagination.total === 0
+              ? 'No workers found'
+              : `Showing ${workers.length} of ${pagination.total} workers`}
           </span>
         </div>
       </div>
