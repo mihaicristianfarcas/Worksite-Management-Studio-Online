@@ -12,7 +12,6 @@ interface ProjectsState {
     pageSize: number
     total: number
   }
-  lastFetchTime: number | null
   fetchProjects: (filters?: ProjectFilters, page?: number, pageSize?: number) => Promise<Project[]>
   refreshProjects: () => Promise<Project[]>
   setFilters: (filters: ProjectFilters) => void
@@ -34,37 +33,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     pageSize: 10,
     total: 0
   },
-  lastFetchTime: null,
 
   fetchProjects: async (filters = {}, page = 1, pageSize = 10) => {
-    const state = get()
-    const currentTime = Date.now()
-    const cacheTime = 5000 // 5 seconds cache
-
-    // Generate a cache key based on filters to invalidate cache when sorting changes
-    const filterKey = JSON.stringify({
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      search: filters.search,
-      status: filters.status
-    })
-
-    // Check if we have cached data that's still valid and if filter parameters haven't changed
-    if (
-      state.lastFetchTime &&
-      currentTime - state.lastFetchTime < cacheTime &&
-      state.projects.length > 0 &&
-      JSON.stringify({
-        sortBy: state.filters.sortBy,
-        sortOrder: state.filters.sortOrder,
-        search: state.filters.search,
-        status: state.filters.status
-      }) === filterKey
-    ) {
-      console.log('Using cached projects data')
-      return state.projects
-    }
-
     console.log('Fetching projects with filters:', filters, 'page:', page, 'pageSize:', pageSize)
     set({ loadingState: 'loading', error: null })
 
@@ -79,7 +49,6 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           total: response.total
         },
         loadingState: 'idle',
-        lastFetchTime: currentTime,
         filters // Store the current filters
       })
       return response.data

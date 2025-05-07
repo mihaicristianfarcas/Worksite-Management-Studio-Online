@@ -1,6 +1,6 @@
 import { Project } from '@/api/types'
-import ProjectWorkersTable from '@/components/projects/assigned-workers-table'
-import ProjectMap from '@/components/projects/site-map'
+import ProjectMap from './site-map'
+import { WorkersDataTable } from '@/components/workers/data-table'
 
 interface ProjectDetailsProps {
   project: Project
@@ -11,11 +11,17 @@ interface ProjectDetailsProps {
  */
 const ProjectDetails = ({ project }: ProjectDetailsProps) => {
   return (
-    <div className='grid grid-cols-2 items-center justify-between gap-3 p-2'>
-      <div className='space-y-4'>
-        <h2 className='text-lg font-medium'>Assigned workers to {project.name}</h2>
-        <ProjectWorkersTable project={project} />
-      </div>
+    <div className='flex flex-row justify-center gap-8 space-y-8'>
+      {/* Assigned Workers Table */}
+      <WorkersDataTable
+        initialWorkers={project.workers}
+        showFilters={false}
+        showPagination={false}
+        showActions={false}
+        title='Assigned Workers'
+      />
+
+      {/* Project Map */}
       <ProjectMap project={project} />
     </div>
   )

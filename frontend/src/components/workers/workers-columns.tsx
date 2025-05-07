@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ColumnDef } from '@tanstack/react-table'
+import { ColumnDef, Row } from '@tanstack/react-table'
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react'
 import { Worker } from '@/api/types'
 import { Button } from '@/components/ui/button'
@@ -16,39 +16,45 @@ import {
 interface UseWorkersColumnsProps {
   onDeleteWorker: (worker: Worker) => void
   onEditWorker: (worker: Worker) => void
+  showActions?: boolean
 }
 
 export function useWorkersColumns({
   onDeleteWorker,
-  onEditWorker
+  onEditWorker,
+  showActions = true
 }: UseWorkersColumnsProps): ColumnDef<Worker>[] {
   return React.useMemo<ColumnDef<Worker>[]>(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
+      ...(showActions
+        ? [
+            {
+              id: 'select',
+              header: ({ table }) => (
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && 'indeterminate')
+                  }
+                  onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+                  aria-label='Select all'
+                  className='mx-auto'
+                />
+              ),
+              cell: ({ row }) => (
+                <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={value => row.toggleSelected(!!value)}
+                  aria-label='Select row'
+                  className='mx-auto'
+                />
+              ),
+              enableSorting: false,
+              enableHiding: false,
+              size: 50
             }
-            onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-            aria-label='Select all'
-            className='mx-auto'
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={value => row.toggleSelected(!!value)}
-            aria-label='Select row'
-            className='mx-auto'
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-        size: 50
-      },
+          ]
+        : []),
       {
         accessorKey: 'name',
         header: ({ column }) => (
@@ -117,39 +123,40 @@ export function useWorkersColumns({
         },
         size: 150
       },
-      {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-          const worker = row.original
+      ...(showActions
+        ? [
+            {
+              id: 'actions',
+              cell: ({ row }: { row: Row<Worker> }) => {
+                const worker = row.original
 
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='ghost' className='h-8 w-8 p-0'>
-                  <span className='sr-only'>Open menu</span>
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='end'>
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => navigator.clipboard.writeText(worker.id.toString())}
-                >
-                  Copy worker ID
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onEditWorker(worker)}>Edit</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDeleteWorker(worker)} className='text-red-600'>
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )
-        },
-        size: 80
-      }
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant='ghost' className='h-8 w-8 p-0'>
+                        <span className='sr-only'>Open menu</span>
+                        <MoreHorizontal className='h-4 w-4' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end'>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => onEditWorker(worker)}>Edit</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className='text-destructive'
+                        onClick={() => onDeleteWorker(worker)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )
+              },
+              size: 50
+            }
+          ]
+        : [])
     ],
-    [onDeleteWorker, onEditWorker]
+    [onDeleteWorker, onEditWorker, showActions]
   )
 }

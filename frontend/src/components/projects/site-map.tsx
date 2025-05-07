@@ -25,8 +25,12 @@ const ProjectMap = ({ project }: ProjectMapProps) => {
   }, [])
 
   return (
-    <div className='h-[400px] w-full overflow-hidden rounded-lg border border-gray-200'>
+    <div
+      className='h-[400px] w-full overflow-hidden rounded-lg border border-gray-200'
+      style={{ zIndex: 0 }}
+    >
       <MapContainer
+        key={`${project.id}-${latitude}-${longitude}`}
         center={[latitude ? latitude : 0, longitude ? longitude : 0]}
         zoom={13}
         style={{ height: '100%', width: '100%' }}

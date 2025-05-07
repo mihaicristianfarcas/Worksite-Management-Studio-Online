@@ -24,8 +24,27 @@ import { useWorkersColumns } from '@/components/workers/workers-columns'
 
 // Custom hooks
 import { useWorkersTable } from '@/hooks/use-workers-table'
+import { useEffect, useState } from 'react'
+import { Worker } from '@/api/types'
 
-export function WorkersDataTable() {
+interface WorkersDataTableProps {
+  // Optional props to customize the table
+  initialWorkers?: Worker[]
+  showFilters?: boolean
+  showPagination?: boolean
+  showActions?: boolean
+  title?: string
+}
+
+export function WorkersDataTable({
+  initialWorkers,
+  showFilters = true,
+  showPagination = true,
+  showActions = true,
+  title
+}: WorkersDataTableProps) {
+  const [mounted, setMounted] = useState(false)
+
   // Get table state and handlers from custom hook
   const tableHook = useWorkersTable()
 
@@ -80,18 +99,24 @@ export function WorkersDataTable() {
   // Get columns configuration
   const columns = useWorkersColumns({
     onDeleteWorker: handleDeleteWorker,
-    onEditWorker: setSelectedWorker
+    onEditWorker: setSelectedWorker,
+    showActions
   })
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Create table instance
   const table = useReactTable({
-    data: workers,
+    data: initialWorkers || workers,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
+    enableRowSelection: showActions,
+    enableMultiRowSelection: showActions,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
@@ -131,79 +156,94 @@ export function WorkersDataTable() {
     handleDeleteMultiple(selectedIds)
   }
 
+  // Don't render anything until mounted
+  if (!mounted) {
+    return null
+  }
+
   return (
-    <>
+    <div className='space-y-4'>
+      {title && <h3 className='text-lg font-semibold'>{title}</h3>}
+
       {/* Filters Bar */}
-      <WorkersFiltersBar
-        columns={table.getAllColumns()}
-        columnVisibility={columnVisibility}
-        onColumnVisibilityChange={setColumnVisibility}
-        selectedCount={table.getFilteredSelectedRowModel().rows.length}
-        onDeleteSelected={() => setDeleteMultipleConfirmOpen(true)}
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        onSearch={handleSearch}
-        filters={filters}
-        tempFilters={tempFilters}
-        filterPopoverOpen={filterPopoverOpen}
-        onFilterPopoverChange={setFilterPopoverOpen}
-        onFilterChange={handleFilterChange}
-        onApplyFilters={handleApplyFilters}
-        onResetFilters={resetFilters}
-        addDialogOpen={addDialogOpen}
-        onAddDialogChange={setAddDialogOpen}
-        onAddWorker={handleAddWorker}
-        onRefresh={handleFullReset}
-        isLoading={loadingState === 'loading'}
-      />
+      {showFilters && (
+        <WorkersFiltersBar
+          columns={table.getAllColumns()}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          selectedCount={table.getFilteredSelectedRowModel().rows.length}
+          onDeleteSelected={() => setDeleteMultipleConfirmOpen(true)}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onSearch={handleSearch}
+          filters={filters}
+          tempFilters={tempFilters}
+          filterPopoverOpen={filterPopoverOpen}
+          onFilterPopoverChange={setFilterPopoverOpen}
+          onFilterChange={handleFilterChange}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={resetFilters}
+          addDialogOpen={addDialogOpen}
+          onAddDialogChange={setAddDialogOpen}
+          onAddWorker={handleAddWorker}
+          onRefresh={handleFullReset}
+          isLoading={loadingState === 'loading'}
+        />
+      )}
 
       {/* Table */}
       <WorkersTable table={table} columns={columns} />
 
       {/* Pagination */}
-      <WorkersPagination
-        page={pagination.page}
-        pageSize={pagination.pageSize}
-        total={pagination.total}
-        selectedCount={table.getFilteredSelectedRowModel().rows.length}
-        onPageChange={refreshTable}
-        workers={workers}
-      />
+      {showPagination && (
+        <WorkersPagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          selectedCount={table.getFilteredSelectedRowModel().rows.length}
+          onPageChange={refreshTable}
+          workers={workers}
+        />
+      )}
 
       {/* Dialogs */}
-      {/* Edit worker dialog */}
-      <Dialog open={!!selectedWorker} onOpenChange={open => !open && setSelectedWorker(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit worker</DialogTitle>
-            <DialogDescription>Modify worker information.</DialogDescription>
-          </DialogHeader>
-          {selectedWorker && (
-            <EditWorkerForm worker={selectedWorker} onEditWorker={handleEditWorker} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {showActions && (
+        <>
+          {/* Edit worker dialog */}
+          <Dialog open={!!selectedWorker} onOpenChange={open => !open && setSelectedWorker(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit worker</DialogTitle>
+                <DialogDescription>Modify worker information.</DialogDescription>
+              </DialogHeader>
+              {selectedWorker && (
+                <EditWorkerForm worker={selectedWorker} onEditWorker={handleEditWorker} />
+              )}
+            </DialogContent>
+          </Dialog>
 
-      {/* Delete confirmations */}
-      <ConfirmationDialog
-        isOpen={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title='Delete worker'
-        description={`Are you sure you want to delete ${workerToDelete?.name}? This action cannot be undone.`}
-        confirmText='Delete'
-        variant='destructive'
-      />
+          {/* Delete confirmations */}
+          <ConfirmationDialog
+            isOpen={deleteConfirmOpen}
+            onClose={() => setDeleteConfirmOpen(false)}
+            onConfirm={handleConfirmDelete}
+            title='Delete worker'
+            description={`Are you sure you want to delete ${workerToDelete?.name}? This action cannot be undone.`}
+            confirmText='Delete'
+            variant='destructive'
+          />
 
-      <ConfirmationDialog
-        isOpen={deleteMultipleConfirmOpen}
-        onClose={() => setDeleteMultipleConfirmOpen(false)}
-        onConfirm={handleMultipleDelete}
-        title='Delete multiple workers'
-        description={`Are you sure you want to delete ${table.getFilteredSelectedRowModel().rows.length} workers? This action cannot be undone.`}
-        confirmText='Delete All'
-        variant='destructive'
-      />
-    </>
+          <ConfirmationDialog
+            isOpen={deleteMultipleConfirmOpen}
+            onClose={() => setDeleteMultipleConfirmOpen(false)}
+            onConfirm={handleMultipleDelete}
+            title='Delete selected workers'
+            description='Are you sure you want to delete the selected workers? This action cannot be undone.'
+            confirmText='Delete'
+            variant='destructive'
+          />
+        </>
+      )}
+    </div>
   )
 }
