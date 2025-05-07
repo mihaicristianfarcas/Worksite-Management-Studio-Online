@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/cache"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/config"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/controller"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
@@ -11,8 +12,11 @@ import (
 )
 
 func main() {
-	// Initialize database
+	// Initialize the database
 	config.InitDB()
+	
+	// Initialize the cache system
+	cache.InitCache()
 
 	// New Echo instance
 	e := echo.New()
