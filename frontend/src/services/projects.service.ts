@@ -209,8 +209,21 @@ export const projectsService = {
   /**
    * Get available workers for a project
    */
-  async getAvailableWorkers(projectId: number): Promise<Worker[]> {
-    const response = await fetch(`${API_URL}/projects/${projectId}/workers/available`)
+  async getAvailableWorkers(
+    projectId: number,
+    pagination?: PaginationParams
+  ): Promise<PaginatedResponse<Worker>> {
+    let url = `${API_URL}/projects/${projectId}/workers/available`
+
+    // Add pagination parameters if provided
+    if (pagination) {
+      const queryParams = new URLSearchParams()
+      queryParams.append('page', pagination.page.toString())
+      queryParams.append('page_size', pagination.pageSize.toString())
+      url += `?${queryParams.toString()}`
+    }
+
+    const response = await fetch(url)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

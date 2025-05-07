@@ -110,7 +110,7 @@ export function WorkersDataTable({
 
   // Create table instance
   const table = useReactTable({
-    data: initialWorkers || workers,
+    data: initialWorkers || workers || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -202,7 +202,7 @@ export function WorkersDataTable({
           total={pagination.total}
           selectedCount={table.getFilteredSelectedRowModel().rows.length}
           onPageChange={refreshTable}
-          workers={workers}
+          workers={initialWorkers || workers || []}
         />
       )}
 

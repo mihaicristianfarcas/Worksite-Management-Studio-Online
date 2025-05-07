@@ -77,22 +77,8 @@ export const workersService = {
 
       const data = await response.json()
 
-      // Check if the response is already in the expected format
-      if (data.data && typeof data.total === 'number') {
-        return data
-      }
-
-      // If it's an array, convert it to the expected format
-      if (Array.isArray(data)) {
-        return {
-          data: data,
-          total: data.length,
-          page: pagination?.page || 1,
-          pageSize: pagination?.pageSize || data.length
-        }
-      }
-
-      throw new Error('Invalid response format from server')
+      // Return the paginated response directly since the backend now returns the expected format
+      return data
     } catch (error) {
       console.error('Error fetching workers:', error)
       throw error

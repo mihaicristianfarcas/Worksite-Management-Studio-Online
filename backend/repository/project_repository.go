@@ -32,8 +32,9 @@ func (r *ProjectRepository) GetByID(id uint) (*model.Project, error) {
 }
 
 // GetAll retrieves all projects with optional filtering and sorting
-func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string, sortOrder string) ([]model.Project, error) {
+func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string, sortOrder string, page int, pageSize int) ([]model.Project, int64, error) {
 	var projects []model.Project
+	var total int64
 	query := r.db.Model(&model.Project{})
 
 	// Apply filters
@@ -51,6 +52,11 @@ func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string
 		}
 	}
 
+	// Count total records (before pagination)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	// Apply sorting
 	if sortBy != "" {
 		order := sortBy
@@ -60,14 +66,34 @@ func (r *ProjectRepository) GetAll(filters map[string]interface{}, sortBy string
 		query = query.Order(order)
 	}
 
+	// Apply pagination
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = query.Offset(offset).Limit(pageSize)
+	}
+
 	err := query.Preload("Workers").Find(&projects).Error
-	return projects, err
+	return projects, total, err
 }
 
-func (r *ProjectRepository) GetAllWorkers() ([]model.Worker, error) {
+func (r *ProjectRepository) GetAllWorkers(page int, pageSize int) ([]model.Worker, int64, error) {
 	var workers []model.Worker
-	err := r.db.Preload("Projects").Find(&workers).Error
-	return workers, err
+	var total int64
+	query := r.db.Model(&model.Worker{})
+
+	// Count total records (before pagination)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = query.Offset(offset).Limit(pageSize)
+	}
+
+	err := query.Preload("Projects").Find(&workers).Error
+	return workers, total, err
 }
 
 // Update updates a project

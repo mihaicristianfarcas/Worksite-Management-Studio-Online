@@ -64,12 +64,34 @@ func (c *WorkerController) GetAllWorkers(ctx echo.Context) error {
 	sortBy := ctx.QueryParam("sort_by")
 	sortOrder := ctx.QueryParam("sort_order")
 
-	workers, err := c.repo.GetAll(filters, sortBy, sortOrder)
+	// Get pagination parameters
+	page := 1
+	pageSize := 10
+
+	if pageParam := ctx.QueryParam("page"); pageParam != "" {
+		if parsedPage, err := strconv.Atoi(pageParam); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	if pageSizeParam := ctx.QueryParam("page_size"); pageSizeParam != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeParam); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	workers, total, err := c.repo.GetAll(filters, sortBy, sortOrder, page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	return ctx.JSON(http.StatusOK, workers)
+	// Return paginated response
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"data":     workers,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	})
 }
 
 // GetWorker handles GET /api/workers/:id

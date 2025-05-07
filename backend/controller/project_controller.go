@@ -39,12 +39,34 @@ func (c *ProjectController) GetAllProjects(ctx echo.Context) error {
 	sortBy := ctx.QueryParam("sort_by")
 	sortOrder := ctx.QueryParam("sort_order")
 
-	projects, err := c.repo.GetAll(filters, sortBy, sortOrder)
+	// Get pagination parameters
+	page := 1
+	pageSize := 10
+
+	if pageParam := ctx.QueryParam("page"); pageParam != "" {
+		if parsedPage, err := strconv.Atoi(pageParam); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	if pageSizeParam := ctx.QueryParam("page_size"); pageSizeParam != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeParam); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	projects, total, err := c.repo.GetAll(filters, sortBy, sortOrder, page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	return ctx.JSON(http.StatusOK, projects)
+	// Return paginated response
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"data":     projects,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	})
 }
 
 // GetProject handles GET /api/projects/:id
@@ -153,8 +175,24 @@ func (c *ProjectController) GetAvailableWorkers(ctx echo.Context) error {
 		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Project not found"})
 	}
 
-	// Get all workers
-	workers, err := c.repo.GetAllWorkers()
+	// Get pagination parameters
+	page := 1
+	pageSize := 10
+
+	if pageParam := ctx.QueryParam("page"); pageParam != "" {
+		if parsedPage, err := strconv.Atoi(pageParam); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	if pageSizeParam := ctx.QueryParam("page_size"); pageSizeParam != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeParam); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	// Get all workers with pagination
+	workers, total, err := c.repo.GetAllWorkers(page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -174,7 +212,13 @@ func (c *ProjectController) GetAvailableWorkers(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, availableWorkers)
+	// Return paginated response
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"data":     availableWorkers,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	})
 }
 
 // UnassignWorkerFromProject handles DELETE /api/projects/:id/workers/:workerId

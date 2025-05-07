@@ -81,18 +81,18 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       console.log('API result:', result)
 
       set({
-        workers: result.data,
+        workers: result.data || [],
         loadingState: 'success',
         filters: filters || {},
         pagination: {
           page: paginationParams.page,
           pageSize: paginationParams.pageSize,
-          total: result.total
+          total: result.total || 0
         },
         lastFetchTime: currentTime
       })
 
-      return result.data
+      return result.data || []
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error fetching workers:', error)
