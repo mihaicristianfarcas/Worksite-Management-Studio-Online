@@ -1,5 +1,5 @@
 import { flexRender, Table as TableInstance, ColumnDef } from '@tanstack/react-table'
-import { Worker } from '@/api/types'
+import { Worker } from '@/services/types'
 
 import {
   Table,

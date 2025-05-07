@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { SortingState } from '@tanstack/react-table'
-import { Worker, WorkerFilters } from '@/api/types'
+import { Worker, WorkerFilters } from '@/services/types'
 import { useWorkersStore } from '@/store/workers-store'
 
 export interface UseWorkersTableProps {

@@ -1,4 +1,4 @@
-import { Project } from '@/api/types'
+import { Project } from '@/services/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Carousel,

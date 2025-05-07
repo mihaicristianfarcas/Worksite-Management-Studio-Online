@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Project, ProjectFilters, Worker } from '@/api/types'
+import { Project, ProjectFilters, Worker } from '@/services/types'
 import { projectsService } from '@/services/projects.service'
 
 interface ProjectsState {

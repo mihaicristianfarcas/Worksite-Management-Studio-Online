@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Worker, WorkerFilters } from '@/api/types'
+import { Worker, WorkerFilters } from '@/services/types'
 import { toast } from 'sonner'
 import { workersService } from '@/services/workers.service'
 

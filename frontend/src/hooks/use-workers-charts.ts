@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Worker } from '@/api/types'
+import { Worker } from '@/services/types'
 import { useWorkersStore } from '@/store/workers-store'
 
 // Chart data types

@@ -1,4 +1,4 @@
-import { Worker, WorkerFilters, PaginationParams, PaginatedResponse } from '@/api/types'
+import { Worker, WorkerFilters, PaginationParams, PaginatedResponse } from '@/services/types'
 
 // API base URL
 const API_URL = 'http://localhost:8080/api'

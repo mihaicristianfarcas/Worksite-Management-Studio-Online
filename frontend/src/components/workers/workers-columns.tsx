@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { ColumnDef, Row } from '@tanstack/react-table'
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react'
-import { Worker } from '@/api/types'
+import { Worker } from '@/services/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {

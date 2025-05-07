@@ -25,7 +25,7 @@ import { useWorkersColumns } from '@/components/workers/workers-columns'
 // Custom hooks
 import { useWorkersTable } from '@/hooks/use-workers-table'
 import { useEffect, useState } from 'react'
-import { Worker } from '@/api/types'
+import { Worker } from '@/services/types'
 
 interface WorkersDataTableProps {
   // Optional props to customize the table

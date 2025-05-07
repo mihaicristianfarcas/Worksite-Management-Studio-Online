@@ -1,4 +1,4 @@
-import { Worker } from '@/api/types'
+import { Worker } from '@/services/types'
 import { Button } from '@/components/ui/button'
 
 interface WorkersPaginationProps {

@@ -1,4 +1,4 @@
-import { Project } from '@/api/types'
+import { Project } from '@/services/types'
 import ProjectMap from './site-map'
 import { WorkersDataTable } from '@/components/workers/data-table'
 

@@ -1,4 +1,4 @@
-import { ProjectFilters } from '@/api/types'
+import { ProjectFilters } from '@/services/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

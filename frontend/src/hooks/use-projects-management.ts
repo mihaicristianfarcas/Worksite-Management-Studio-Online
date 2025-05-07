@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Project, ProjectFilters } from '@/api/types'
+import { Project, ProjectFilters } from '@/services/types'
 import { useProjectsStore } from '@/store/projects-store'
 import { toast } from 'sonner'
 import { type CarouselApi } from '@/components/ui/carousel'

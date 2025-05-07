@@ -1,4 +1,10 @@
-import { Project, ProjectFilters, PaginationParams, PaginatedResponse, Worker } from '@/api/types'
+import {
+  Project,
+  ProjectFilters,
+  PaginationParams,
+  PaginatedResponse,
+  Worker
+} from '@/services/types'
 
 // API base URL - make sure this matches backend
 const API_URL = 'http://localhost:8080/api'
