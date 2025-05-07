@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/auth"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/cache"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/config"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/controller"
@@ -32,29 +33,37 @@ func main() {
 	// Repository instances
 	workerRepo := repository.NewWorkerRepository()
 	projectRepo := repository.NewProjectRepository()
+	userRepo := repository.NewUserRepository()
 
 	// Controller instances
 	workerCtrl := controller.NewWorkerController(workerRepo)
 	projectCtrl := controller.NewProjectController(projectRepo)
+	authCtrl := controller.NewAuthController(userRepo)
 
-	// Worker routes
-	e.GET("/api/workers", workerCtrl.GetAllWorkers)
-	e.GET("/api/workers/:id", workerCtrl.GetWorker)
-	e.POST("/api/workers", workerCtrl.CreateWorker)
-	e.PUT("/api/workers/:id", workerCtrl.UpdateWorker)
-	e.DELETE("/api/workers/:id", workerCtrl.DeleteWorker)
+	// Auth routes (public)
+	e.POST("/api/auth/login", authCtrl.Login)
+	e.POST("/api/auth/register", authCtrl.Register)
 
-	// Project routes
-	e.GET("/api/projects", projectCtrl.GetAllProjects)
-	e.GET("/api/projects/:id", projectCtrl.GetProject)
-	e.POST("/api/projects", projectCtrl.CreateProject)
-	e.PUT("/api/projects/:id", projectCtrl.UpdateProject)
-	e.DELETE("/api/projects/:id", projectCtrl.DeleteProject)
+	// Worker routes (protected)
+	workers := e.Group("/api/workers", auth.JWTMiddleware)
+	workers.GET("", workerCtrl.GetAllWorkers)
+	workers.GET("/:id", workerCtrl.GetWorker)
+	workers.POST("", workerCtrl.CreateWorker)
+	workers.PUT("/:id", workerCtrl.UpdateWorker)
+	workers.DELETE("/:id", workerCtrl.DeleteWorker)
 
-	// Project-Worker relationship routes
-	e.POST("/api/projects/:id/workers", projectCtrl.AssignWorkerToProject)
-	e.GET("/api/projects/:id/workers/available", projectCtrl.GetAvailableWorkers)
-	e.DELETE("/api/projects/:id/workers/:workerId", projectCtrl.UnassignWorkerFromProject)
+	// Project routes (protected)
+	projects := e.Group("/api/projects", auth.JWTMiddleware)
+	projects.GET("", projectCtrl.GetAllProjects)
+	projects.GET("/:id", projectCtrl.GetProject)
+	projects.POST("", projectCtrl.CreateProject)
+	projects.PUT("/:id", projectCtrl.UpdateProject)
+	projects.DELETE("/:id", projectCtrl.DeleteProject)
+
+	// Project-Worker relationship routes (protected)
+	projects.POST("/:id/workers", projectCtrl.AssignWorkerToProject)
+	projects.GET("/:id/workers/available", projectCtrl.GetAvailableWorkers)
+	projects.DELETE("/:id/workers/:workerId", projectCtrl.UnassignWorkerFromProject)
 
 	// Start the server
 	e.Logger.Fatal(e.Start(":8080"))

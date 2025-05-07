@@ -7,27 +7,35 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/auth-context'
 import { Link } from 'react-router-dom'
 
-export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+export function RegisterForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useAuth()
+  const { register } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!username || !password) {
-      setError('Username and password are required')
+    // Validate inputs
+    if (!username || !email || !password) {
+      setError('All fields are required')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
       return
     }
 
     try {
       setIsLoading(true)
-      await login({ username, password })
+      await register({ username, email, password })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setIsLoading(false)
     }
@@ -50,11 +58,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
               <span className='sr-only'>Worksite Management</span>
             </a>
-            <h1 className='text-l my-1.5 font-bold'>Welcome to Worksite Management Studio</h1>
+            <h1 className='text-l my-1.5 font-bold'>Create Your Account</h1>
             <div className='text-muted-foreground text-center text-xs'>
-              Don&apos;t have an account?{' '}
-              <Link to='/register' className='underline underline-offset-4'>
-                Sign up
+              Already have an account?{' '}
+              <Link to='/' className='underline underline-offset-4'>
+                Log in
               </Link>
             </div>
           </div>
@@ -76,6 +84,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               />
             </div>
             <div className='grid gap-3'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                type='email'
+                placeholder='user@example.com'
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className='grid gap-3'>
               <Label htmlFor='password'>Password</Label>
               <Input
                 id='password'
@@ -86,14 +105,25 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                 required
               />
             </div>
+            <div className='grid gap-3'>
+              <Label htmlFor='confirmPassword'>Confirm Password</Label>
+              <Input
+                id='confirmPassword'
+                type='password'
+                placeholder=''
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? 'Creating Account...' : 'Register'}
             </Button>
           </div>
         </div>
       </form>
       <div className='text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs'>
-        By clicking continue, you agree to our <a href='#'>Terms of Service</a> and{' '}
+        By registering, you agree to our <a href='#'>Terms of Service</a> and{' '}
         <a href='#'>Privacy Policy</a>.
       </div>
     </div>
