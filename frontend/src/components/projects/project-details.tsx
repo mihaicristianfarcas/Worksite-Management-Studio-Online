@@ -11,7 +11,7 @@ interface ProjectDetailsProps {
  */
 const ProjectDetails = ({ project }: ProjectDetailsProps) => {
   return (
-    <div className='flex flex-row justify-center gap-8 space-y-8'>
+    <div className='grid grid-cols-2 gap-8 space-y-8'>
       {/* Assigned Workers Table */}
       <WorkersDataTable
         initialWorkers={project.workers}
