@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { WorkersAPI, Worker, WorkerFilters } from '@/api/workers-api'
+import { Worker, WorkerFilters } from '@/services/types'
 import { toast } from 'sonner'
+import { workersService } from '@/services/workers.service'
 
 // Enhanced loading state type
 type LoadingState = 'idle' | 'loading' | 'success' | 'error'
@@ -24,8 +25,8 @@ interface WorkersState {
   setFilters: (filters: WorkerFilters) => void
   addWorker: (worker: Worker) => Promise<Worker>
   updateWorker: (worker: Worker) => Promise<Worker>
-  deleteWorker: (id: string) => Promise<void>
-  deleteWorkers: (ids: string[]) => Promise<void>
+  deleteWorker: (id: number) => Promise<void>
+  deleteWorkers: (ids: number[]) => Promise<void>
   resetError: () => void
 }
 
@@ -76,22 +77,22 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       }
 
       console.log('Fetching with pagination:', paginationParams)
-      const result = await WorkersAPI.getAll(filters, paginationParams)
+      const result = await workersService.getAll(filters, paginationParams)
       console.log('API result:', result)
 
       set({
-        workers: result.data,
+        workers: result.data || [],
         loadingState: 'success',
         filters: filters || {},
         pagination: {
           page: paginationParams.page,
           pageSize: paginationParams.pageSize,
-          total: result.total
+          total: result.total || 0
         },
         lastFetchTime: currentTime
       })
 
-      return result.data
+      return result.data || []
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error fetching workers:', error)
@@ -107,7 +108,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   addWorker: async (worker: Worker) => {
     set({ loadingState: 'loading', error: null })
     try {
-      const newWorker = await WorkersAPI.create(worker)
+      const newWorker = await workersService.create(worker)
       set(state => ({
         workers: [...state.workers, newWorker],
         loadingState: 'success'
@@ -129,7 +130,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
   updateWorker: async (worker: Worker) => {
     set({ loadingState: 'loading', error: null })
     try {
-      const updatedWorker = await WorkersAPI.update(worker)
+      const updatedWorker = await workersService.update(worker)
       set(state => ({
         workers: state.workers.map(w => (w.id === updatedWorker.id ? updatedWorker : w)),
         loadingState: 'success'
@@ -148,10 +149,10 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     }
   },
 
-  deleteWorker: async (id: string) => {
+  deleteWorker: async (id: number) => {
     set({ loadingState: 'loading', error: null })
     try {
-      await WorkersAPI.delete(id)
+      await workersService.delete(id)
       set(state => ({
         workers: state.workers.filter(w => w.id !== id),
         loadingState: 'success'
@@ -169,15 +170,15 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     }
   },
 
-  deleteWorkers: async (ids: string[]) => {
+  deleteWorkers: async (ids: number[]) => {
     set({ loadingState: 'loading', error: null })
     try {
-      await WorkersAPI.deleteMany(ids)
+      await workersService.deleteMany(ids)
       set(state => ({
         workers: state.workers.filter(w => !ids.includes(w.id)),
         loadingState: 'success'
       }))
-      toast.success(`${ids.length} workers deleted successfully!`)
+      toast.success(`${ids.length} worker(s) deleted successfully!`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error deleting workers:', error)

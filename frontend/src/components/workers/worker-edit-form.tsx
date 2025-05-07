@@ -4,15 +4,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
-import { Worker } from '@/data/model'
+import { Worker } from '@/api/workers-api'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
-interface AddWorkerFormProps {
-  onAddWorker: (worker: Worker) => void
+interface EditWorkerFormProps {
+  worker: Worker
+  onEditWorker: (worker: Worker) => void
 }
 
-export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
+export default function EditWorkerForm({
+  worker,
+  onEditWorker: onEditWorker
+}: EditWorkerFormProps) {
   const {
     register,
     handleSubmit,
@@ -21,19 +25,20 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   } = useForm<WorkerFormInputs>({
     resolver: zodResolver(WorkerSchema),
     defaultValues: {
-      name: '',
-      position: ''
+      name: worker.name,
+      age: worker.age,
+      position: worker.position,
+      salary: worker.salary
     }
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    // Generate a random ID for the new worker
-    const newWorker: Worker = {
-      ...data,
-      id: Math.random().toString(36).substr(2, 9)
+    const updatedWorker = {
+      ...worker,
+      ...data
     }
 
-    onAddWorker(newWorker)
+    onEditWorker(updatedWorker)
     reset()
   }
 
@@ -63,6 +68,8 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
               id='age'
               type='number'
               placeholder='Age'
+              min={18}
+              max={100}
               autoComplete='age'
               {...register('age')}
             />
@@ -78,6 +85,8 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
               id='salary'
               type='number'
               placeholder='Salary'
+              min={0}
+              step={1}
               autoComplete='salary'
               {...register('salary')}
             />
@@ -104,7 +113,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
         </div>
         {/* Submit */}
         <Button className='mt-4 w-full' type='submit' disabled={isSubmitting}>
-          {isSubmitting ? 'Adding...' : 'Proceed'}
+          {isSubmitting ? 'Saving...' : 'Save Changes'}
         </Button>
       </form>
     </section>

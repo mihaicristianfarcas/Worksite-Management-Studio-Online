@@ -5,559 +5,431 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"strconv"
 	"testing"
+	"time"
 
+	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/config"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTestRepository() *repository.Repository {
-	// Initialize an empty repository for testing
-	return repository.NewRepository()
+func setupTestControllers() (*WorkerController, *ProjectController) {
+	// Initialize test database
+	config.DB = nil
+	config.InitDB()
+
+	workerRepo := repository.NewWorkerRepository()
+	projectRepo := repository.NewProjectRepository()
+	return NewWorkerController(workerRepo), NewProjectController(projectRepo)
 }
 
-func TestGetAllWorkers(t *testing.T) {
-	// Setup
+func TestWorkerController(t *testing.T) {
+	workerCtrl, _ := setupTestControllers()
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/workers", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	
-	repo := setupTestRepository()
-	
-	// Add a test worker to the repository
-	testWorker := model.Worker{ID: "1", Name: "Test", Age: 30, Position: "Developer", Salary: 3000}
-	repo.CreateWorker(testWorker)
-	
-	controller := NewController(repo)
-	
-	// Act
-	if err := controller.GetAllWorkers(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	// Assert
-	if rec.Code != http.StatusOK {
-		t.Fatalf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	
-	var workers []model.Worker
-	if err := json.Unmarshal(rec.Body.Bytes(), &workers); err != nil {
-		t.Fatalf("Expected valid JSON, got error: %v", err)
-	}
-	
-	if len(workers) == 0 {
-		t.Fatalf("Expected at least 1 worker, got %d", len(workers))
-	}
-	
-	foundTestWorker := false
-	for _, w := range workers {
-		if w.ID == testWorker.ID {
-			foundTestWorker = true
-			break
+
+	// Test CreateWorker
+	t.Run("Create Worker", func(t *testing.T) {
+		worker := model.Worker{
+			Name:     "John Doe",
+			Age:      25,
+			Position: "Senior Developer",
+			Salary:   75000,
 		}
-	}
-	
-	if !foundTestWorker {
-		t.Fatal("Expected to find the test worker in the response")
-	}
-}
+		jsonData, _ := json.Marshal(worker)
 
-func TestGetWorker(t *testing.T) {
-	// Setup
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-	
-	repo := setupTestRepository()
-	
-	// Add a test worker to the repository
-	testWorker := model.Worker{ID: "1", Name: "Test", Age: 30, Position: "Developer", Salary: 3000}
-	repo.CreateWorker(testWorker)
-	
-	controller := NewController(repo)
-	
-	// Act
-	if err := controller.GetWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	// Assert
-	if rec.Code != http.StatusOK {
-		t.Fatalf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	
-	var worker model.Worker
-	if err := json.Unmarshal(rec.Body.Bytes(), &worker); err != nil {
-		t.Fatalf("Expected valid JSON, got error: %v", err)
-	}
-	
-	if worker.ID != "1" {
-		t.Fatalf("Expected worker ID '1', got '%s'", worker.ID)
-	}
-	
-	// Test non-existent worker
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("non-existent")
-	
-	if err := controller.GetWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("Expected status code %d, got %d", http.StatusNotFound, rec.Code)
-	}
-}
+		req := httptest.NewRequest(http.MethodPost, "/api/workers", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
 
-func TestCreateWorker(t *testing.T) {
-	// Setup
-	e := echo.New()
-	workerJSON := `{"id":"2","name":"New Worker","age":25,"position":"Engineer","salary":4000}`
-	req := httptest.NewRequest(http.MethodPost, "/api/workers", strings.NewReader(workerJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	
-	repo := setupTestRepository()
-	controller := NewController(repo)
-	
-	// Act
-	if err := controller.CreateWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	// Assert
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("Expected status code %d, got %d", http.StatusCreated, rec.Code)
-	}
-	
-	var worker model.Worker
-	if err := json.Unmarshal(rec.Body.Bytes(), &worker); err != nil {
-		t.Fatalf("Expected valid JSON, got error: %v", err)
-	}
-	
-	if worker.ID != "2" {
-		t.Fatalf("Expected worker ID '2', got '%s'", worker.ID)
-	}
-	
-	// Test invalid JSON
-	req = httptest.NewRequest(http.MethodPost, "/api/workers", strings.NewReader("invalid json"))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	
-	if err := controller.CreateWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("Expected status code %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
+		err := workerCtrl.CreateWorker(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, rec.Code)
 
-func TestUpdateWorker(t *testing.T) {
-	// Setup
-	e := echo.New()
-	repo := setupTestRepository()
-	
-	// Add a test worker to the repository
-	testWorker := model.Worker{ID: "3", Name: "Test", Age: 30, Position: "Developer", Salary: 3000}
-	repo.CreateWorker(testWorker)
-	
-	workerJSON := `{"id":"3","name":"Updated Worker","age":32,"position":"Senior Developer","salary":5000}`
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(workerJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("3")
-	
-	controller := NewController(repo)
-	
-	// Act
-	if err := controller.UpdateWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	// Assert
-	if rec.Code != http.StatusOK {
-		t.Fatalf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	
-	var worker model.Worker
-	if err := json.Unmarshal(rec.Body.Bytes(), &worker); err != nil {
-		t.Fatalf("Expected valid JSON, got error: %v", err)
-	}
-	
-	if worker.Name != "Updated Worker" {
-		t.Fatalf("Expected worker name 'Updated Worker', got '%s'", worker.Name)
-	}
-	
-	// Test non-existent worker
-	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(workerJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("non-existent")
-	
-	if err := controller.UpdateWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("Expected status code %d, got %d", http.StatusNotFound, rec.Code)
-	}
-}
+		var response model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, worker.Name, response.Name)
+		assert.Equal(t, worker.Age, response.Age)
+		assert.Equal(t, worker.Position, response.Position)
+		assert.Equal(t, worker.Salary, response.Salary)
+	})
 
-func TestDeleteWorker(t *testing.T) {
-	// Setup
-	e := echo.New()
-	repo := setupTestRepository()
-	
-	// Add a test worker to the repository
-	testWorker := model.Worker{ID: "5", Name: "Test", Age: 30, Position: "Developer", Salary: 3000}
-	repo.CreateWorker(testWorker)
-	
-	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("5")
-	
-	controller := NewController(repo)
-	
-	// Act
-	if err := controller.DeleteWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	// Assert
-	if rec.Code != http.StatusOK {
-		t.Fatalf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	
-	// Test non-existent worker
-	req = httptest.NewRequest(http.MethodDelete, "/", nil)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	c.SetPath("/api/workers/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("non-existent")
-	
-	if err := controller.DeleteWorker(c); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("Expected status code %d, got %d", http.StatusNotFound, rec.Code)
-	}
-}
+	// Test CreateWorker with invalid data
+	t.Run("Create Worker with Invalid Data", func(t *testing.T) {
+		invalidWorker := model.Worker{
+			Name:     "J", // Too short
+			Age:      16,  // Too young
+			Position: "D", // Too short
+			Salary:   -1000, // Negative salary
+		}
+		jsonData, _ := json.Marshal(invalidWorker)
 
-func TestGetAllWorkersWithFilters(t *testing.T) {
-	// Setup
-	e := echo.New()
-	repo := repository.NewRepository()
-	controller := NewController(repo)
+		req := httptest.NewRequest(http.MethodPost, "/api/workers", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
 
-	// Add test workers
-	workers := []model.Worker{
-		{ID: "1", Name: "John", Age: 25, Position: "Developer", Salary: 50000},
-		{ID: "2", Name: "Jane", Age: 30, Position: "Manager", Salary: 70000},
-		{ID: "3", Name: "Bob", Age: 35, Position: "Developer", Salary: 60000},
-		{ID: "4", Name: "Alice", Age: 28, Position: "Developer", Salary: 55000},
-		{ID: "5", Name: "Charlie", Age: 32, Position: "Manager", Salary: 75000},
-	}
-	for _, w := range workers {
-		repo.CreateWorker(w)
-	}
+		err := workerCtrl.CreateWorker(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
-	// Test cases
-	tests := []struct {
-		name           string
-		query          string
-		expectedCount  int
-		expectedStatus int
-		verifyResults  func(t *testing.T, response PaginatedResponse)
-	}{
-		{
-			name:           "Filter by position",
-			query:          "?position=Developer",
-			expectedCount:  3,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for _, worker := range response.Data {
-					assert.Equal(t, "Developer", worker.Position)
-				}
-			},
-		},
-		{
-			name:           "Filter by age range",
-			query:          "?min_age=25&max_age=30",
-			expectedCount:  3,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for _, worker := range response.Data {
-					assert.GreaterOrEqual(t, worker.Age, 25)
-					assert.LessOrEqual(t, worker.Age, 30)
-				}
-			},
-		},
-		{
-			name:           "Filter by salary range",
-			query:          "?min_salary=55000&max_salary=65000",
-			expectedCount:  2,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for _, worker := range response.Data {
-					assert.GreaterOrEqual(t, worker.Salary, 55000)
-					assert.LessOrEqual(t, worker.Salary, 65000)
-				}
-			},
-		},
-		{
-			name:           "Sort by name ascending",
-			query:          "?sort_by=name&sort_order=asc",
-			expectedCount:  5,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for i := 1; i < len(response.Data); i++ {
-					assert.LessOrEqual(t, response.Data[i-1].Name, response.Data[i].Name)
-				}
-			},
-		},
-		{
-			name:           "Sort by salary descending",
-			query:          "?sort_by=salary&sort_order=desc",
-			expectedCount:  5,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for i := 1; i < len(response.Data); i++ {
-					assert.GreaterOrEqual(t, response.Data[i-1].Salary, response.Data[i].Salary)
-				}
-			},
-		},
-		{
-			name:           "Combined filters",
-			query:          "?position=Developer&min_age=25&max_age=35&min_salary=50000&max_salary=60000",
-			expectedCount:  3,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				for _, worker := range response.Data {
-					assert.Equal(t, "Developer", worker.Position)
-					assert.GreaterOrEqual(t, worker.Age, 25)
-					assert.LessOrEqual(t, worker.Age, 35)
-					assert.GreaterOrEqual(t, worker.Salary, 50000)
-					assert.LessOrEqual(t, worker.Salary, 60000)
-				}
-			},
-		},
-		{
-			name:           "Pagination",
-			query:          "?page=1&pageSize=2",
-			expectedCount:  2,
-			expectedStatus: http.StatusOK,
-			verifyResults: func(t *testing.T, response PaginatedResponse) {
-				assert.Equal(t, 1, response.Page)
-				assert.Equal(t, 2, response.PageSize)
-				assert.Equal(t, 5, response.Total)
-			},
-		},
-	}
+		// Verify error response
+		var response map[string]interface{}
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Contains(t, response, "error")
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/api/workers"+tt.query, nil)
-			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
+	// Test GetAllWorkers
+	t.Run("Get All Workers", func(t *testing.T) {
+		// Create a test worker first
+		worker := model.Worker{
+			Name:     "Jane Smith",
+			Age:      28,
+			Position: "Senior Developer",
+			Salary:   80000,
+		}
+		jsonData, _ := json.Marshal(worker)
+		req := httptest.NewRequest(http.MethodPost, "/api/workers", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := workerCtrl.CreateWorker(c)
+		assert.NoError(t, err)
 
-			err := controller.GetAllWorkers(c)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedStatus, rec.Code)
+		// Now test getting all workers
+		req = httptest.NewRequest(http.MethodGet, "/api/workers", nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
 
-			var response PaginatedResponse
-			err = json.Unmarshal(rec.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Len(t, response.Data, tt.expectedCount)
+		err = workerCtrl.GetAllWorkers(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
 
-			if tt.verifyResults != nil {
-				tt.verifyResults(t, response)
+		var response []model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Greater(t, len(response), 0)
+
+		// Find our newly created worker
+		var foundWorker *model.Worker
+		for i := range response {
+			if response[i].Name == worker.Name {
+				foundWorker = &response[i]
+				break
 			}
-		})
+		}
+		assert.NotNil(t, foundWorker, "Created worker not found in response")
+		if foundWorker != nil {
+			assert.Equal(t, worker.Name, foundWorker.Name)
+			assert.Equal(t, worker.Age, foundWorker.Age)
+			assert.Equal(t, worker.Position, foundWorker.Position)
+			assert.Equal(t, worker.Salary, foundWorker.Salary)
+		}
+	})
+
+	// Test GetWorker
+	t.Run("Get Worker By ID", func(t *testing.T) {
+		// Create a test worker first
+		worker := model.Worker{
+			Name:     "Alice Johnson",
+			Age:      30,
+			Position: "Lead Developer",
+			Salary:   90000,
+		}
+		jsonData, _ := json.Marshal(worker)
+		req := httptest.NewRequest(http.MethodPost, "/api/workers", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := workerCtrl.CreateWorker(c)
+		assert.NoError(t, err)
+
+		var createdWorker model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &createdWorker)
+		assert.NoError(t, err)
+
+		// Now test getting the worker
+		req = httptest.NewRequest(http.MethodGet, "/api/workers/"+strconv.FormatUint(uint64(createdWorker.ID), 10), nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
+		c.SetPath("/api/workers/:id")
+		c.SetParamNames("id")
+		c.SetParamValues(strconv.FormatUint(uint64(createdWorker.ID), 10))
+
+		err = workerCtrl.GetWorker(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var response model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, createdWorker.ID, response.ID)
+		assert.Equal(t, worker.Name, response.Name)
+		assert.Equal(t, worker.Age, response.Age)
+		assert.Equal(t, worker.Position, response.Position)
+		assert.Equal(t, worker.Salary, response.Salary)
+	})
+}
+
+func TestProjectController(t *testing.T) {
+	_, projectCtrl := setupTestControllers()
+	e := echo.New()
+
+	// Test CreateProject
+	t.Run("Create Project", func(t *testing.T) {
+		project := model.Project{
+			Name:        "Website Redesign",
+			Description: "Complete overhaul of the company website with modern design and improved functionality",
+			Status:      "active",
+			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
+		}
+		jsonData, _ := json.Marshal(project)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		err := projectCtrl.CreateProject(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, rec.Code)
+
+		var response model.Project
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, project.Name, response.Name)
+		assert.Equal(t, project.Description, response.Description)
+		assert.Equal(t, project.Status, response.Status)
+		assert.NotNil(t, response.StartDate)
+	})
+
+	// Test CreateProject with invalid data
+	t.Run("Create Project with Invalid Data", func(t *testing.T) {
+		invalidProject := model.Project{
+			Name:        "W", // Too short
+			Description: "Too short", // Too short
+			Status:      "invalid_status", // Invalid status
+			StartDate:   time.Now(),
+		}
+		jsonData, _ := json.Marshal(invalidProject)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		err := projectCtrl.CreateProject(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	// Test GetAllProjects
+	t.Run("Get All Projects", func(t *testing.T) {
+		// Create a test project first
+		project := model.Project{
+			Name:        "Mobile App Development",
+			Description: "Development of a new mobile application for iOS and Android platforms",
+			Status:      "active",
+			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
+		}
+		jsonData, _ := json.Marshal(project)
+		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := projectCtrl.CreateProject(c)
+		assert.NoError(t, err)
+
+		// Now test getting all projects
+		req = httptest.NewRequest(http.MethodGet, "/api/projects", nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
+
+		err = projectCtrl.GetAllProjects(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var response []model.Project
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Greater(t, len(response), 0)
+
+		// Find our newly created project
+		var foundProject *model.Project
+		for i := range response {
+			if response[i].Name == project.Name {
+				foundProject = &response[i]
+				break
+			}
+		}
+		assert.NotNil(t, foundProject, "Created project not found in response")
+		if foundProject != nil {
+			assert.Equal(t, project.Name, foundProject.Name)
+			assert.Equal(t, project.Description, foundProject.Description)
+			assert.Equal(t, project.Status, foundProject.Status)
+			assert.NotNil(t, foundProject.StartDate)
+		}
+	})
+
+	// Test GetProject
+	t.Run("Get Project By ID", func(t *testing.T) {
+		// Create a test project first
+		project := model.Project{
+			Name:        "Project X",
+			Description: "A comprehensive project with multiple phases and deliverables",
+			Status:      "active",
+			StartDate:   time.Now(),
+			Latitude:    45.123456,
+			Longitude:   -122.123456,
+		}
+		jsonData, _ := json.Marshal(project)
+		req := httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := projectCtrl.CreateProject(c)
+		assert.NoError(t, err)
+
+		var createdProject model.Project
+		err = json.Unmarshal(rec.Body.Bytes(), &createdProject)
+		assert.NoError(t, err)
+
+		// Now test getting the project
+		req = httptest.NewRequest(http.MethodGet, "/api/projects/"+strconv.FormatUint(uint64(createdProject.ID), 10), nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
+		c.SetPath("/api/projects/:id")
+		c.SetParamNames("id")
+		c.SetParamValues(strconv.FormatUint(uint64(createdProject.ID), 10))
+
+		err = projectCtrl.GetProject(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var response model.Project
+		err = json.Unmarshal(rec.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, createdProject.ID, response.ID)
+		assert.Equal(t, project.Name, response.Name)
+		assert.Equal(t, project.Description, response.Description)
+		assert.Equal(t, project.Status, response.Status)
+		assert.NotNil(t, response.StartDate)
+	})
+}
+
+func TestWorkerProjectRelationship(t *testing.T) {
+	workerCtrl, projectCtrl := setupTestControllers()
+	e := echo.New()
+
+	// Create a test worker
+	worker := model.Worker{
+		Name:     "John Doe",
+		Age:      25,
+		Position: "Senior Developer",
+		Salary:   75000,
 	}
-}
+	jsonData, _ := json.Marshal(worker)
+	req := httptest.NewRequest(http.MethodPost, "/api/workers", bytes.NewBuffer(jsonData))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	err := workerCtrl.CreateWorker(c)
+	assert.NoError(t, err)
 
-func TestCreateWorkerValidation(t *testing.T) {
-    // Setup
-    e := echo.New()
-    e.HTTPErrorHandler = echo.New().DefaultHTTPErrorHandler
-    
-    repo := repository.NewRepository()
-    controller := NewController(repo)
+	var createdWorker model.Worker
+	err = json.Unmarshal(rec.Body.Bytes(), &createdWorker)
+	assert.NoError(t, err)
 
-    // Test cases
-    tests := []struct {
-        name           string
-        worker         model.Worker
-        expectedStatus int
-    }{
-        {
-            name: "Valid worker",
-            worker: model.Worker{
-                ID:       "1",
-                Name:     "John Doe",
-                Age:      25,
-                Position: "Developer",
-                Salary:   50000,
-            },
-            expectedStatus: http.StatusCreated,
-        },
-        {
-            name: "Invalid age",
-            worker: model.Worker{
-                ID:       "2",
-                Name:     "Young Worker",
-                Age:      15, // Below minimum age
-                Position: "Intern",
-                Salary:   20000,
-            },
-            expectedStatus: http.StatusBadRequest,
-        },
-        {
-            name: "Invalid name length",
-            worker: model.Worker{
-                ID:       "3",
-                Name:     "A", // Too short
-                Age:      25,
-                Position: "Developer",
-                Salary:   50000,
-            },
-            expectedStatus: http.StatusBadRequest,
-        },
-        {
-            name: "Invalid salary",
-            worker: model.Worker{
-                ID:       "4",
-                Name:     "John Doe",
-                Age:      25,
-                Position: "Developer",
-                Salary:   -1000, // Negative salary
-            },
-            expectedStatus: http.StatusBadRequest,
-        },
-    }
+	// Create a test project
+	project := model.Project{
+		Name:        "Website Redesign",
+		Description: "Complete overhaul of the company website with modern design and improved functionality",
+		Status:      "active",
+		StartDate:   time.Now(),
+		Latitude:    45.123456,
+		Longitude:   -122.123456,
+	}
+	jsonData, _ = json.Marshal(project)
+	req = httptest.NewRequest(http.MethodPost, "/api/projects", bytes.NewBuffer(jsonData))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	err = projectCtrl.CreateProject(c)
+	assert.NoError(t, err)
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            workerJSON, _ := json.Marshal(tt.worker)
-            req := httptest.NewRequest(http.MethodPost, "/workers", bytes.NewReader(workerJSON))
-            req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-            rec := httptest.NewRecorder()
-            c := e.NewContext(req, rec)
+	var createdProject model.Project
+	err = json.Unmarshal(rec.Body.Bytes(), &createdProject)
+	assert.NoError(t, err)
 
-            // Use Echo's error handling middleware to process any errors
-            if err := controller.CreateWorker(c); err != nil {
-                e.HTTPErrorHandler(err, c)
-            }
-            
-            // Now we can directly check the recorder's status code
-            assert.Equal(t, tt.expectedStatus, rec.Code)
-        })
-    }
-}
+	// Test AddToProject
+	t.Run("Add Worker to Project", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/workers/"+strconv.FormatUint(uint64(createdWorker.ID), 10)+"/projects/"+strconv.FormatUint(uint64(createdProject.ID), 10), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/api/workers/:workerId/projects/:projectId")
+		c.SetParamNames("workerId", "projectId")
+		c.SetParamValues(strconv.FormatUint(uint64(createdWorker.ID), 10), strconv.FormatUint(uint64(createdProject.ID), 10))
 
-func TestUpdateWorkerValidation(t *testing.T) {
-    // Setup
-    e := echo.New()
-    // Add Echo's HTTP error handler middleware
-    e.HTTPErrorHandler = echo.New().DefaultHTTPErrorHandler
-    
-    repo := repository.NewRepository()
-    controller := NewController(repo)
+		err := workerCtrl.AddToProject(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-    // Add initial worker
-    initialWorker := model.Worker{
-        ID:       "1",
-        Name:     "John Doe",
-        Age:      25,
-        Position: "Developer",
-        Salary:   50000,
-    }
-    repo.CreateWorker(initialWorker)
+		// Verify worker has project
+		req = httptest.NewRequest(http.MethodGet, "/api/workers/"+strconv.FormatUint(uint64(createdWorker.ID), 10), nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
+		c.SetPath("/api/workers/:id")
+		c.SetParamNames("id")
+		c.SetParamValues(strconv.FormatUint(uint64(createdWorker.ID), 10))
 
-    // Test cases
-    tests := []struct {
-        name           string
-        worker         model.Worker
-        expectedStatus int
-    }{
-        {
-            name: "Valid update",
-            worker: model.Worker{
-                ID:       "1",
-                Name:     "John Updated",
-                Age:      26,
-                Position: "Senior Developer",
-                Salary:   60000,
-            },
-            expectedStatus: http.StatusOK,
-        },
-        {
-            name: "Invalid age update",
-            worker: model.Worker{
-                ID:       "1",
-                Name:     "John Doe",
-                Age:      15, // Below minimum age
-                Position: "Developer",
-                Salary:   50000,
-            },
-            expectedStatus: http.StatusBadRequest,
-        },
-        {
-            name: "Invalid salary update",
-            worker: model.Worker{
-                ID:       "1",
-                Name:     "John Doe",
-                Age:      25,
-                Position: "Developer",
-                Salary:   -1000, // Negative salary
-            },
-            expectedStatus: http.StatusBadRequest,
-        },
-    }
+		err = workerCtrl.GetWorker(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            workerJSON, _ := json.Marshal(tt.worker)
-            req := httptest.NewRequest(http.MethodPatch, "/workers/1", bytes.NewReader(workerJSON))
-            req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-            rec := httptest.NewRecorder()
-            c := e.NewContext(req, rec)
-            c.SetPath("/workers/:id")
-            c.SetParamNames("id")
-            c.SetParamValues("1")
+		var worker model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &worker)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(worker.Projects))
+		assert.Equal(t, createdProject.ID, worker.Projects[0].ID)
+	})
 
-            // Use Echo's error handling middleware to process any errors
-            if err := controller.UpdateWorker(c); err != nil {
-                e.HTTPErrorHandler(err, c)
-            }
-            
-            // Now we can directly check the recorder's status code
-            assert.Equal(t, tt.expectedStatus, rec.Code)
-        })
-    }
+	// Test RemoveFromProject
+	t.Run("Remove Worker from Project", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodDelete, "/api/workers/"+strconv.FormatUint(uint64(createdWorker.ID), 10)+"/projects/"+strconv.FormatUint(uint64(createdProject.ID), 10), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/api/workers/:workerId/projects/:projectId")
+		c.SetParamNames("workerId", "projectId")
+		c.SetParamValues(strconv.FormatUint(uint64(createdWorker.ID), 10), strconv.FormatUint(uint64(createdProject.ID), 10))
+
+		err := workerCtrl.RemoveFromProject(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		// Verify worker no longer has project
+		req = httptest.NewRequest(http.MethodGet, "/api/workers/"+strconv.FormatUint(uint64(createdWorker.ID), 10), nil)
+		rec = httptest.NewRecorder()
+		c = e.NewContext(req, rec)
+		c.SetPath("/api/workers/:id")
+		c.SetParamNames("id")
+		c.SetParamValues(strconv.FormatUint(uint64(createdWorker.ID), 10))
+
+		err = workerCtrl.GetWorker(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var worker model.Worker
+		err = json.Unmarshal(rec.Body.Bytes(), &worker)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(worker.Projects))
+	})
 }
