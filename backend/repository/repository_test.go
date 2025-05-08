@@ -89,7 +89,7 @@ func TestWorkerRepository(t *testing.T) {
 			"max_age":  30,
 			"min_salary": 50000,
 		}
-		results, err := repo.GetAll(filters, "name", "asc")
+		results, _, err := repo.GetAll(filters, "name", "asc", 1, 10)
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
 		
@@ -217,7 +217,7 @@ func TestProjectRepository(t *testing.T) {
 		filters := map[string]interface{}{
 			"status": "active",
 		}
-		results, err := repo.GetAll(filters, "name", "asc")
+		results, _, err := repo.GetAll(filters, "name", "asc", 1, 10)
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
 		
