@@ -19,7 +19,7 @@ func InitDB() {
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_USER", "mihaicristianfarcas"),
 		getEnv("DB_PASSWORD", "postgres"),
-		getEnv("DB_NAME", "worksite_management"),
+		getEnv("DB_NAME", "worksite_management_individual_entities"),
 		getEnv("DB_PORT", "5432"),
 	)
 
