@@ -11,6 +11,7 @@ import Calendar from './pages/Calendar'
 import Projects from './pages/Projects'
 import Workers from './pages/Workers'
 import Worksites from './pages/Worksites'
+import Admin from './pages/Admin'
 import { AppSidebar } from './components/app-sidebar'
 import { useIsMobile } from './hooks/use-mobile'
 import { Toaster } from 'sonner'
@@ -44,6 +45,14 @@ function App() {
                         <Route path='/settings' element={<Settings />} />
                         <Route path='/workers' element={<Workers />} />
                         <Route path='/worksites' element={<Worksites />} />
+                        <Route
+                          path='/admin'
+                          element={
+                            <ProtectedRoute requiredRole='admin'>
+                              <Admin />
+                            </ProtectedRoute>
+                          }
+                        />
                       </Routes>
                     </div>
                   </SidebarInset>

@@ -17,6 +17,9 @@ type UserRepository interface {
 	ValidateCredentials(username, password string) (*model.User, error)
 	UpdateLastLogin(userID uint) error
 	ChangePassword(userID uint, newPassword string) error
+	GetAllUsers(page, pageSize int, search string) ([]model.User, int64, error)
+	UpdateUserStatus(userID uint, active bool) error
+	UpdateUserRole(userID uint, role string) error
 }
 
 type userRepository struct {
@@ -107,4 +110,49 @@ func (r *userRepository) ChangePassword(userID uint, newPassword string) error {
 	
 	return r.db.Model(&model.User{}).Where("id = ?", userID).
 		Update("password_hash", string(hashedPassword)).Error
+}
+
+// GetAllUsers retrieves all users with pagination and search
+func (r *userRepository) GetAllUsers(page, pageSize int, search string) ([]model.User, int64, error) {
+	var users []model.User
+	var total int64
+
+	// Base query
+	query := r.db.Model(&model.User{})
+	
+	// Apply search filter if provided
+	if search != "" {
+		query = query.Where("username LIKE ? OR email LIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+	
+	// Get total count
+	query.Count(&total)
+	
+	// Apply pagination
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Clear password hashes
+	for i := range users {
+		users[i].PasswordHash = ""
+	}
+	
+	return users, total, nil
+}
+
+// UpdateUserStatus activates or deactivates a user
+func (r *userRepository) UpdateUserStatus(userID uint, active bool) error {
+	return r.db.Model(&model.User{}).Where("id = ?", userID).Update("active", active).Error
+}
+
+// UpdateUserRole changes a user's role
+func (r *userRepository) UpdateUserRole(userID uint, role string) error {
+	// Validate role
+	if role != "user" && role != "admin" {
+		return errors.New("invalid role")
+	}
+	
+	return r.db.Model(&model.User{}).Where("id = ?", userID).Update("role", role).Error
 } 

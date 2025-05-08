@@ -39,6 +39,7 @@ func main() {
 	workerCtrl := controller.NewWorkerController(workerRepo)
 	projectCtrl := controller.NewProjectController(projectRepo)
 	authCtrl := controller.NewAuthController(userRepo)
+	adminCtrl := controller.NewAdminController(userRepo)
 
 	// Auth routes (public)
 	e.POST("/api/auth/login", authCtrl.Login)
@@ -64,6 +65,13 @@ func main() {
 	projects.POST("/:id/workers", projectCtrl.AssignWorkerToProject)
 	projects.GET("/:id/workers/available", projectCtrl.GetAvailableWorkers)
 	projects.DELETE("/:id/workers/:workerId", projectCtrl.UnassignWorkerFromProject)
+
+	// Admin routes (protected with admin role)
+	admin := e.Group("/api/admin", auth.JWTMiddleware, auth.AdminOnly)
+	admin.GET("/users", adminCtrl.GetAllUsers)
+	admin.PUT("/users/:id/status", adminCtrl.UpdateUserStatus)
+	admin.PUT("/users/:id/role", adminCtrl.UpdateUserRole)
+	admin.GET("/users/:id/activity", adminCtrl.GetUserActivity)
 
 	// Start the server
 	e.Logger.Fatal(e.Start(":8080"))

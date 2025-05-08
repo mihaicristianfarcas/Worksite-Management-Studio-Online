@@ -20,7 +20,8 @@ import {
   MapPin,
   Frame,
   LayoutDashboard,
-  LogOut
+  LogOut,
+  ShieldAlert
 } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
 import { Link, useLocation } from 'react-router-dom'
@@ -65,6 +66,15 @@ const additionalPages = [
   }
 ]
 
+// Admin pages only shown to admin users
+const adminPages = [
+  {
+    title: 'Admin',
+    icon: ShieldAlert,
+    path: '/admin'
+  }
+]
+
 export function AppSidebar() {
   const isMobile = useIsMobile()
   const { logout, user } = useAuth()
@@ -84,6 +94,9 @@ export function AppSidebar() {
   const isRouteActive = (path: string) => {
     return location.pathname === path || location.pathname === path.toLowerCase()
   }
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin'
 
   return (
     <>
@@ -162,6 +175,32 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {/* Admin section - only visible to admin users */}
+          {isAdmin && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Administration</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {adminPages.map(item => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        className='cursor-pointer'
+                        asChild
+                        isActive={isRouteActive(item.path)}
+                        tooltip={item.title}
+                      >
+                        <Link to={item.path}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter className='fixed bottom-2 left-[0.43rem] items-center justify-center'>
           {!isMobile && <SidebarTrigger />}
