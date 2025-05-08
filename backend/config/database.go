@@ -19,7 +19,7 @@ func InitDB() {
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_USER", "mihaicristianfarcas"),
 		getEnv("DB_PASSWORD", "postgres"),
-		getEnv("DB_NAME", "worksite_management"),
+		getEnv("DB_NAME", "worksite_management_individual_entities"),
 		getEnv("DB_PORT", "5432"),
 	)
 
@@ -58,7 +58,7 @@ func InitDB() {
 	sqlDB.SetConnMaxLifetime(1 * time.Hour) // Maximum connection lifetime
 
 	// Auto Migrate the schema with optimized indices
-	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{})
+	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{}, &model.WorkerProject{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -93,6 +93,9 @@ func createIndexes(db *gorm.DB) {
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+
+	// Add index for user_id in worker_projects table
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_worker_projects_user_id ON worker_projects(user_id)")
 	
 	log.Println("Database indexes created successfully")
 }

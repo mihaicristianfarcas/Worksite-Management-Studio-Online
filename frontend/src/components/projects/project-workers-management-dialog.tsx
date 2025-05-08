@@ -84,7 +84,17 @@ const ProjectWorkersManagementDialog = ({
           search: searchTerm
         })
         setAvailableWorkers(response.data || [])
-        setAvailableWorkersTotal(response.total || 0)
+
+        // The API returns all workers count, but we need available workers count
+        // When no search is active, we can count how many workers are not assigned to this project
+        if (!searchTerm) {
+          const availableCount = response.total - (localProject.workers?.length || 0)
+          setAvailableWorkersTotal(Math.max(0, availableCount))
+        } else {
+          // For searches, use the length of returned data
+          setAvailableWorkersTotal(response.data?.length || 0)
+        }
+
         setCurrentPage(page)
       } catch (err) {
         console.error('Error loading available workers:', err)
@@ -93,7 +103,7 @@ const ProjectWorkersManagementDialog = ({
         setLoading(false)
       }
     },
-    [open, localProject?.id, pageSize, searchTerm]
+    [open, localProject?.id, localProject?.workers?.length, pageSize, searchTerm]
   )
 
   useEffect(() => {
@@ -354,7 +364,7 @@ const ProjectWorkersManagementDialog = ({
                         : `Showing ${Math.min((currentPage - 1) * pageSize + 1, availableWorkersTotal)}-${Math.min(
                             currentPage * pageSize,
                             availableWorkersTotal
-                          )} of ${availableWorkersTotal} workers`}
+                          )} of ${availableWorkersTotal} available workers`}
                     </div>
                     <div className='flex items-center gap-2'>
                       <Button
@@ -367,7 +377,9 @@ const ProjectWorkersManagementDialog = ({
                       </Button>
                       <div className='text-sm font-medium'>
                         Page {currentPage} of{' '}
-                        {Math.max(1, Math.ceil(availableWorkersTotal / pageSize))}
+                        {availableWorkersTotal === 0
+                          ? 1
+                          : Math.max(1, Math.ceil(availableWorkersTotal / pageSize))}
                       </div>
                       <Button
                         variant='outline'

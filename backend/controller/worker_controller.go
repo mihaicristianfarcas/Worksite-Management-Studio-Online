@@ -22,8 +22,23 @@ func NewWorkerController(repo *repository.WorkerRepository) *WorkerController {
 	}
 }
 
+// getUserID extracts the user ID from the context
+func getUserID(c echo.Context) (uint, error) {
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+	return userID, nil
+}
+
 // GetAllWorkers handles GET /api/workers
 func (c *WorkerController) GetAllWorkers(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Get query parameters for filtering and sorting
 	filters := make(map[string]interface{})
 
@@ -80,7 +95,7 @@ func (c *WorkerController) GetAllWorkers(ctx echo.Context) error {
 		}
 	}
 
-	workers, total, err := c.repo.GetAll(filters, sortBy, sortOrder, page, pageSize)
+	workers, total, err := c.repo.GetAll(userID, filters, sortBy, sortOrder, page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -96,12 +111,18 @@ func (c *WorkerController) GetAllWorkers(ctx echo.Context) error {
 
 // GetWorker handles GET /api/workers/:id
 func (c *WorkerController) GetWorker(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
 	}
 
-	worker, err := c.repo.GetByID(uint(id))
+	worker, err := c.repo.GetByID(uint(id), userID)
 	if err != nil {
 		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Worker not found"})
 	}
@@ -111,10 +132,19 @@ func (c *WorkerController) GetWorker(ctx echo.Context) error {
 
 // CreateWorker handles POST /api/workers
 func (c *WorkerController) CreateWorker(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	var worker model.Worker
 	if err := ctx.Bind(&worker); err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
+
+	// Set user ID for the worker
+	worker.UserID = userID
 
 	// Validate worker
 	if err := c.validate.Struct(worker); err != nil {
@@ -130,6 +160,12 @@ func (c *WorkerController) CreateWorker(ctx echo.Context) error {
 
 // UpdateWorker handles PUT /api/workers/:id
 func (c *WorkerController) UpdateWorker(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
@@ -140,8 +176,11 @@ func (c *WorkerController) UpdateWorker(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
+	// Set worker ID and user ID
 	worker.ID = uint(id)
-	if err := c.repo.Update(&worker); err != nil {
+	worker.UserID = userID
+
+	if err := c.repo.Update(&worker, userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
@@ -150,12 +189,18 @@ func (c *WorkerController) UpdateWorker(ctx echo.Context) error {
 
 // DeleteWorker handles DELETE /api/workers/:id
 func (c *WorkerController) DeleteWorker(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
 	}
 
-	if err := c.repo.Delete(uint(id)); err != nil {
+	if err := c.repo.Delete(uint(id), userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
@@ -164,6 +209,12 @@ func (c *WorkerController) DeleteWorker(ctx echo.Context) error {
 
 // AddToProject handles POST /api/workers/:workerId/projects/:projectId
 func (c *WorkerController) AddToProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	workerId, err := strconv.ParseUint(ctx.Param("workerId"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid worker ID"})
@@ -174,7 +225,7 @@ func (c *WorkerController) AddToProject(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid project ID"})
 	}
 
-	if err := c.repo.AddToProject(uint(workerId), uint(projectId)); err != nil {
+	if err := c.repo.AddToProject(uint(workerId), uint(projectId), userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
@@ -183,6 +234,12 @@ func (c *WorkerController) AddToProject(ctx echo.Context) error {
 
 // RemoveFromProject handles DELETE /api/workers/:workerId/projects/:projectId
 func (c *WorkerController) RemoveFromProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	workerId, err := strconv.ParseUint(ctx.Param("workerId"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid worker ID"})
@@ -193,7 +250,7 @@ func (c *WorkerController) RemoveFromProject(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid project ID"})
 	}
 
-	if err := c.repo.RemoveFromProject(uint(workerId), uint(projectId)); err != nil {
+	if err := c.repo.RemoveFromProject(uint(workerId), uint(projectId), userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 

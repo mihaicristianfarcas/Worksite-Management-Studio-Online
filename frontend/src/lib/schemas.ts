@@ -23,7 +23,8 @@ export const WorkerSchema = z.object({
   salary: z.coerce
     .number()
     .min(0, { message: 'Salary must be at least 0.' })
-    .int({ message: 'Salary must be an integer.' })
+    .int({ message: 'Salary must be an integer.' }),
+  user_id: z.number().optional() // Will be set by the backend
 })
 
 export const ProjectSchema = z.object({
@@ -43,6 +44,7 @@ export const ProjectSchema = z.object({
   end_date: z.string().optional(),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
+  user_id: z.number().optional(), // Will be set by the backend
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   deleted_at: z.string().nullable().optional()

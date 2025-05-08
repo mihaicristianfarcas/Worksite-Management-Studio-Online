@@ -24,6 +24,12 @@ func NewProjectController(repo *repository.ProjectRepository) *ProjectController
 
 // GetAllProjects handles GET /api/projects
 func (c *ProjectController) GetAllProjects(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Get query parameters for filtering and sorting
 	filters := make(map[string]interface{})
 	if name := ctx.QueryParam("name"); name != "" {
@@ -55,7 +61,7 @@ func (c *ProjectController) GetAllProjects(ctx echo.Context) error {
 		}
 	}
 
-	projects, total, err := c.repo.GetAll(filters, sortBy, sortOrder, page, pageSize)
+	projects, total, err := c.repo.GetAll(userID, filters, sortBy, sortOrder, page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -71,12 +77,18 @@ func (c *ProjectController) GetAllProjects(ctx echo.Context) error {
 
 // GetProject handles GET /api/projects/:id
 func (c *ProjectController) GetProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
 	}
 
-	project, err := c.repo.GetByID(uint(id))
+	project, err := c.repo.GetByID(uint(id), userID)
 	if err != nil {
 		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Project not found"})
 	}
@@ -86,10 +98,19 @@ func (c *ProjectController) GetProject(ctx echo.Context) error {
 
 // CreateProject handles POST /api/projects
 func (c *ProjectController) CreateProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	var project model.Project
 	if err := ctx.Bind(&project); err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
+
+	// Set user ID for the project
+	project.UserID = userID
 
 	// Validate project
 	if err := c.validate.Struct(project); err != nil {
@@ -105,6 +126,12 @@ func (c *ProjectController) CreateProject(ctx echo.Context) error {
 
 // UpdateProject handles PUT /api/projects/:id
 func (c *ProjectController) UpdateProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
@@ -115,8 +142,11 @@ func (c *ProjectController) UpdateProject(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
+	// Set project ID and user ID
 	project.ID = uint(id)
-	if err := c.repo.Update(&project); err != nil {
+	project.UserID = userID
+
+	if err := c.repo.Update(&project, userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
@@ -125,12 +155,18 @@ func (c *ProjectController) UpdateProject(ctx echo.Context) error {
 
 // DeleteProject handles DELETE /api/projects/:id
 func (c *ProjectController) DeleteProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
 	}
 
-	if err := c.repo.Delete(uint(id)); err != nil {
+	if err := c.repo.Delete(uint(id), userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
@@ -139,6 +175,12 @@ func (c *ProjectController) DeleteProject(ctx echo.Context) error {
 
 // AssignWorkerToProject handles POST /api/projects/:id/workers
 func (c *ProjectController) AssignWorkerToProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	projectId, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid project ID"})
@@ -151,11 +193,11 @@ func (c *ProjectController) AssignWorkerToProject(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	if err := c.repo.AddWorker(uint(projectId), request.WorkerId); err != nil {
+	if err := c.repo.AddWorker(uint(projectId), request.WorkerId, userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	project, err := c.repo.GetByID(uint(projectId))
+	project, err := c.repo.GetByID(uint(projectId), userID)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -165,12 +207,18 @@ func (c *ProjectController) AssignWorkerToProject(ctx echo.Context) error {
 
 // GetAvailableWorkers handles GET /api/projects/:id/workers/available
 func (c *ProjectController) GetAvailableWorkers(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	projectId, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid project ID"})
 	}
 
-	project, err := c.repo.GetByID(uint(projectId))
+	project, err := c.repo.GetByID(uint(projectId), userID)
 	if err != nil {
 		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Project not found"})
 	}
@@ -192,7 +240,7 @@ func (c *ProjectController) GetAvailableWorkers(ctx echo.Context) error {
 	}
 
 	// Get all workers with pagination
-	workers, total, err := c.repo.GetAllWorkers(page, pageSize)
+	workers, total, err := c.repo.GetAllWorkers(userID, page, pageSize)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -223,6 +271,12 @@ func (c *ProjectController) GetAvailableWorkers(ctx echo.Context) error {
 
 // UnassignWorkerFromProject handles DELETE /api/projects/:id/workers/:workerId
 func (c *ProjectController) UnassignWorkerFromProject(ctx echo.Context) error {
+	// Get user ID from context
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return err
+	}
+
 	projectId, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid project ID"})
@@ -233,14 +287,9 @@ func (c *ProjectController) UnassignWorkerFromProject(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid worker ID"})
 	}
 
-	if err := c.repo.RemoveWorker(uint(projectId), uint(workerId)); err != nil {
+	if err := c.repo.RemoveWorker(uint(projectId), uint(workerId), userID); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	project, err := c.repo.GetByID(uint(projectId))
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-
-	return ctx.JSON(http.StatusOK, project)
+	return ctx.NoContent(http.StatusNoContent)
 } 

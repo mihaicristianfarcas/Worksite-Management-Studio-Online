@@ -7,6 +7,7 @@ export type Project = {
   end_date?: string
   latitude?: number
   longitude?: number
+  user_id: number
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
@@ -27,6 +28,7 @@ export type Worker = {
   age: number
   position: string
   salary: number
+  user_id: number
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
@@ -59,6 +61,7 @@ export type User = {
 export type PaginationParams = {
   page: number
   pageSize: number
+  search?: string
 }
 
 export type PaginatedResponse<T> = {

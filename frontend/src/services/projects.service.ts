@@ -208,7 +208,6 @@ export const projectsService = {
     const response = await fetch(`${API_URL}/projects/${projectId}/workers/${workerId}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         ...authService.getAuthHeaders()
       }
     })
@@ -219,7 +218,7 @@ export const projectsService = {
       throw new Error(errorMessage)
     }
 
-    return await response.json()
+    return this.getById(projectId)
   },
 
   /**
