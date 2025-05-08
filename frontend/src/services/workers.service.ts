@@ -1,4 +1,5 @@
 import { Worker, WorkerFilters, PaginationParams, PaginatedResponse } from '@/services/types'
+import { authService } from '@/services/auth.service'
 
 // API base URL
 const API_URL = 'http://localhost:8080/api'
@@ -66,7 +67,11 @@ export const workersService = {
     const url = `${API_URL}/workers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        headers: {
+          ...authService.getAuthHeaders()
+        }
+      })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -89,7 +94,11 @@ export const workersService = {
    * Get a worker by ID
    */
   async getById(id: number): Promise<Worker> {
-    const response = await fetch(`${API_URL}/workers/${id}`)
+    const response = await fetch(`${API_URL}/workers/${id}`, {
+      headers: {
+        ...authService.getAuthHeaders()
+      }
+    })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -108,7 +117,8 @@ export const workersService = {
     const response = await fetch(`${API_URL}/workers`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify(worker)
     })
@@ -129,7 +139,8 @@ export const workersService = {
     const response = await fetch(`${API_URL}/workers/${worker.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify(worker)
     })
@@ -148,7 +159,10 @@ export const workersService = {
    */
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/workers/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        ...authService.getAuthHeaders()
+      }
     })
 
     if (!response.ok) {
@@ -165,7 +179,8 @@ export const workersService = {
     const response = await fetch(`${API_URL}/workers/batch`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify({ ids })
     })

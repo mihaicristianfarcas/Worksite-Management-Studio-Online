@@ -5,6 +5,7 @@ import {
   PaginatedResponse,
   Worker
 } from '@/services/types'
+import { authService } from '@/services/auth.service'
 
 // API base URL - make sure this matches backend
 const API_URL = 'http://localhost:8080/api'
@@ -59,7 +60,11 @@ export const projectsService = {
     const url = `${API_URL}/projects${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        headers: {
+          ...authService.getAuthHeaders()
+        }
+      })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -96,7 +101,11 @@ export const projectsService = {
    * Get a project by ID
    */
   async getById(id: number): Promise<Project> {
-    const response = await fetch(`${API_URL}/projects/${id}`)
+    const response = await fetch(`${API_URL}/projects/${id}`, {
+      headers: {
+        ...authService.getAuthHeaders()
+      }
+    })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -115,7 +124,8 @@ export const projectsService = {
     const response = await fetch(`${API_URL}/projects`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify(project)
     })
@@ -136,7 +146,8 @@ export const projectsService = {
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify(project)
     })
@@ -155,7 +166,10 @@ export const projectsService = {
    */
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/projects/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        ...authService.getAuthHeaders()
+      }
     })
 
     if (!response.ok) {
@@ -172,7 +186,8 @@ export const projectsService = {
     const response = await fetch(`${API_URL}/projects/${projectId}/workers`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       },
       body: JSON.stringify({ workerId })
     })
@@ -193,7 +208,8 @@ export const projectsService = {
     const response = await fetch(`${API_URL}/projects/${projectId}/workers/${workerId}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authService.getAuthHeaders()
       }
     })
 
@@ -207,23 +223,29 @@ export const projectsService = {
   },
 
   /**
-   * Get available workers for a project
+   * Get workers available for assignment to a project
    */
   async getAvailableWorkers(
     projectId: number,
     pagination?: PaginationParams
   ): Promise<PaginatedResponse<Worker>> {
-    let url = `${API_URL}/projects/${projectId}/workers/available`
+    const queryParams = new URLSearchParams()
 
-    // Add pagination parameters if provided
+    // Add pagination parameters
     if (pagination) {
-      const queryParams = new URLSearchParams()
       queryParams.append('page', pagination.page.toString())
       queryParams.append('page_size', pagination.pageSize.toString())
-      url += `?${queryParams.toString()}`
     }
 
-    const response = await fetch(url)
+    const url = `${API_URL}/projects/${projectId}/workers/available${
+      queryParams.toString() ? `?${queryParams.toString()}` : ''
+    }`
+
+    const response = await fetch(url, {
+      headers: {
+        ...authService.getAuthHeaders()
+      }
+    })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -231,6 +253,7 @@ export const projectsService = {
       throw new Error(errorMessage)
     }
 
-    return await response.json()
+    const data = await response.json()
+    return data
   }
 }

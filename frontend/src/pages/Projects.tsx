@@ -77,26 +77,25 @@ export default function Projects() {
   return (
     <>
       <PageTitle>Projects</PageTitle>
-      <div className='space-y-8'>
-        {/* Search and Filter Toolbar */}
-        <ProjectFiltersBar
-          searchTerm={searchTerm}
-          filters={filters}
-          tempFilters={tempFilters}
-          filterPopoverOpen={filterPopoverOpen}
-          loadingState={loadingState}
-          onSearchChange={handleSearchChange}
-          onSearch={handleSearch}
-          onFilterChange={handleFilterChange}
-          onApplyFilters={handleApplyFilters}
-          onResetFilters={resetFilters}
-          onFilterPopoverChange={setFilterPopoverOpen}
-          onAddProject={handleOpenAddDialog}
-          onManageWorkers={handleManageWorkers}
-          currentProjectName={currentProject?.name}
-          onSortChange={handleSortChange}
-        />
-
+      {/* Search and Filter Toolbar */}
+      <ProjectFiltersBar
+        searchTerm={searchTerm}
+        filters={filters}
+        tempFilters={tempFilters}
+        filterPopoverOpen={filterPopoverOpen}
+        loadingState={loadingState}
+        onSearchChange={handleSearchChange}
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={resetFilters}
+        onFilterPopoverChange={setFilterPopoverOpen}
+        onAddProject={handleOpenAddDialog}
+        onManageWorkers={handleManageWorkers}
+        currentProjectName={currentProject?.name}
+        onSortChange={handleSortChange}
+      />
+      <div className='mx-auto my-4 max-w-screen-xl space-y-8'>
         {/* Project Carousel */}
         <ProjectCarousel
           projects={projects}
@@ -108,63 +107,63 @@ export default function Projects() {
           onDeleteProject={handleInitiateDelete}
           carouselApiCallback={handleCarouselChange}
         />
+      </div>
 
-        {/* Project Details (map and workers) - only show if there's a current project */}
-        {currentProject && <ProjectDetails project={currentProject} />}
+      {/* Project Details (map and workers) - only show if there's a current project */}
+      {currentProject && <ProjectDetails project={currentProject} />}
 
-        {/* Worker Assignment Dialog */}
-        <ProjectWorkersManagementDialog
-          project={currentProject}
-          open={workerDialogOpen}
+      {/* Worker Assignment Dialog */}
+      <ProjectWorkersManagementDialog
+        project={currentProject}
+        open={workerDialogOpen}
+        onOpenChange={open => {
+          setWorkerDialogOpen(open)
+          if (!open) {
+            handleWorkerManagementClose()
+          }
+        }}
+      />
+
+      {/* Add Project Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className='max-w-2xl'>
+          <DialogHeader>
+            <DialogTitle>Add New Project</DialogTitle>
+            <DialogDescription>Create a new project in the database.</DialogDescription>
+          </DialogHeader>
+          <AddProjectForm onAddProject={handleAddProject} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      {selectedProject && (
+        <Dialog
+          open={editDialogOpen}
           onOpenChange={open => {
-            setWorkerDialogOpen(open)
-            if (!open) {
-              handleWorkerManagementClose()
-            }
+            setEditDialogOpen(open)
+            if (!open) setSelectedProject(null)
           }}
-        />
-
-        {/* Add Project Dialog */}
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        >
           <DialogContent className='max-w-2xl'>
             <DialogHeader>
-              <DialogTitle>Add New Project</DialogTitle>
-              <DialogDescription>Create a new project in the database.</DialogDescription>
+              <DialogTitle>Edit Project</DialogTitle>
+              <DialogDescription>Modify project information.</DialogDescription>
             </DialogHeader>
-            <AddProjectForm onAddProject={handleAddProject} />
+            <EditProjectForm project={selectedProject} onEditProject={handleEditProject} />
           </DialogContent>
         </Dialog>
+      )}
 
-        {/* Edit Project Dialog */}
-        {selectedProject && (
-          <Dialog
-            open={editDialogOpen}
-            onOpenChange={open => {
-              setEditDialogOpen(open)
-              if (!open) setSelectedProject(null)
-            }}
-          >
-            <DialogContent className='max-w-2xl'>
-              <DialogHeader>
-                <DialogTitle>Edit Project</DialogTitle>
-                <DialogDescription>Modify project information.</DialogDescription>
-              </DialogHeader>
-              <EditProjectForm project={selectedProject} onEditProject={handleEditProject} />
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Delete confirmation */}
-        <ConfirmationDialog
-          isOpen={deleteConfirmOpen}
-          onClose={() => setDeleteConfirmOpen(false)}
-          onConfirm={handleConfirmDelete}
-          title='Delete project'
-          description={`Are you sure you want to delete ${projectToDelete?.name}? This action cannot be undone.`}
-          confirmText='Delete'
-          variant='destructive'
-        />
-      </div>
+      {/* Delete confirmation */}
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title='Delete project'
+        description={`Are you sure you want to delete ${projectToDelete?.name}? This action cannot be undone.`}
+        confirmText='Delete'
+        variant='destructive'
+      />
     </>
   )
 }
