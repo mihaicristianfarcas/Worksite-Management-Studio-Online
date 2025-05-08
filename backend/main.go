@@ -2,6 +2,9 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/auth"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/cache"
@@ -9,6 +12,7 @@ import (
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/controller"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/middleware"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
+	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/monitoring"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
@@ -17,6 +21,9 @@ import (
 func main() {
 	// Initialize the database
 	config.InitDB()
+	
+	// Migrate models - ensure MonitoredUser is included
+	config.DB.AutoMigrate(&model.MonitoredUser{})
 	
 	// Initialize the cache system
 	cache.InitCache()
@@ -36,13 +43,23 @@ func main() {
 	workerRepo := repository.NewWorkerRepository()
 	projectRepo := repository.NewProjectRepository()
 	userRepo := repository.NewUserRepository()
-	logRepo := repository.NewLogRepository() // Keep log repository for background logging
+	logRepo := repository.NewLogRepository()
+	monitoredUserRepo := repository.NewMonitoredUserRepository()
+
+	// Initialize monitoring service
+	monitoringService := monitoring.NewMonitoringService(monitoredUserRepo, userRepo)
 
 	// Controller instances
 	workerCtrl := controller.NewWorkerController(workerRepo)
 	projectCtrl := controller.NewProjectController(projectRepo)
 	authCtrl := controller.NewAuthController(userRepo)
 	adminCtrl := controller.NewAdminController(userRepo, logRepo)
+	monitoringCtrl := controller.NewMonitoringController(
+		monitoredUserRepo,
+		userRepo,
+		monitoringService.GetActivityMonitor(),
+		monitoringService.GetWebSocketHub(),
+	)
 
 	// Create activity logger middleware
 	activityLogger := middleware.NewActivityLogger(logRepo)
@@ -79,6 +96,33 @@ func main() {
 	admin.PUT("/users/:id/status", adminCtrl.UpdateUserStatus)
 	admin.PUT("/users/:id/role", adminCtrl.UpdateUserRole)
 	admin.GET("/users/:id/activity", adminCtrl.GetUserActivity)
+
+	// Monitoring routes (admin only)
+	monitoring := e.Group("/api/monitoring", auth.JWTMiddleware, auth.AdminOnly)
+	monitoring.GET("/users", monitoringCtrl.GetMonitoredUsers)
+	monitoring.POST("/users", monitoringCtrl.ManuallyAddToMonitored)
+	monitoring.PUT("/users/:id", monitoringCtrl.UpdateMonitoredUser)
+	monitoring.DELETE("/users/:id", monitoringCtrl.RemoveFromMonitored)
+	monitoring.GET("/alerts", monitoringCtrl.GetRecentAlerts)
+	
+	// WebSocket endpoint for real-time monitoring (admin only)
+	e.GET("/ws/monitoring", monitoringCtrl.HandleWebSocket, auth.JWTMiddleware, auth.AdminOnly)
+
+	// Set up graceful shutdown
+	go func() {
+		// Create channel for shutdown signals
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		
+		// Wait for shutdown signal
+		<-quit
+		
+		// Shutdown monitoring service
+		monitoringService.Shutdown()
+		
+		// Shutdown server
+		e.Shutdown(nil)
+	}()
 
 	// Start the server
 	e.Logger.Fatal(e.Start(":8080"))

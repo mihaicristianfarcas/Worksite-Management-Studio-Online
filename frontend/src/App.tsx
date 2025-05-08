@@ -12,6 +12,7 @@ import Projects from './pages/Projects'
 import Workers from './pages/Workers'
 import Worksites from './pages/Worksites'
 import Admin from './pages/Admin'
+import AdminMonitoring from './pages/AdminMonitoring'
 import { AppSidebar } from './components/app-sidebar'
 import { useIsMobile } from './hooks/use-mobile'
 import { Toaster } from 'sonner'
@@ -50,6 +51,14 @@ function App() {
                           element={
                             <ProtectedRoute requiredRole='admin'>
                               <Admin />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path='/admin/monitoring'
+                          element={
+                            <ProtectedRoute requiredRole='admin'>
+                              <AdminMonitoring />
                             </ProtectedRoute>
                           }
                         />

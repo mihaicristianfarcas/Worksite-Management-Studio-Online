@@ -5,8 +5,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
-  // SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,7 +19,8 @@ import {
   Frame,
   LayoutDashboard,
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  Bell
 } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
 import { Link, useLocation } from 'react-router-dom'
@@ -72,6 +71,11 @@ const adminPages = [
     title: 'Admin',
     icon: ShieldAlert,
     path: '/admin'
+  },
+  {
+    title: 'Monitoring',
+    icon: Bell,
+    path: '/admin/monitoring'
   }
 ]
 
