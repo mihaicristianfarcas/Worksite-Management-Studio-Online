@@ -113,8 +113,50 @@ func (r *ProjectRepository) Update(project *model.Project, userID uint) error {
 	if result.Error != nil {
 		return result.Error
 	}
+
+	// Create a transaction to handle the update
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// Defer a function to handle transaction completion
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// First, update the project attributes without touching associations
+	if err := tx.Model(project).Omit("Workers").Updates(project).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// If there are workers to update, handle that separately
+	// This approach avoids the automatic M2M association handling that would cause the null user_id issue
+	if len(project.Workers) > 0 {
+		// Clear existing associations
+		if err := tx.Where("project_id = ?", project.ID).Delete(&model.WorkerProject{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		// Re-add worker associations with the correct user_id
+		for _, worker := range project.Workers {
+			workerProject := &model.WorkerProject{
+				WorkerID:  worker.ID,
+				ProjectID: project.ID,
+				UserID:    userID,
+			}
+			if err := tx.Create(workerProject).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
 	
-	return r.db.Save(project).Error
+	return tx.Commit().Error
 }
 
 // Delete deletes a project
