@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { adminService } from '@/services/admin.service'
+import { adminService, ActivityLog } from '@/services/admin.service'
 import { User } from '@/services/types'
 import { toast } from 'sonner'
 import {
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Search } from 'lucide-react'
+import { Search, Clock } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -45,6 +45,32 @@ const Switch = ({
   </div>
 )
 
+// Format a date string for display
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'Never'
+  return new Date(dateString).toLocaleString()
+}
+
+// Get badge color for log type
+const getLogTypeBadge = (logType: string) => {
+  switch (logType) {
+    case 'CREATE':
+      return 'default'
+    case 'UPDATE':
+      return 'secondary'
+    case 'DELETE':
+      return 'destructive'
+    case 'LOGIN':
+      return 'outline'
+    case 'LOGOUT':
+      return 'outline'
+    case 'REGISTER':
+      return 'default'
+    default:
+      return 'outline'
+  }
+}
+
 const Admin = () => {
   const [users, setUsers] = useState<User[]>([])
   const [total, setTotal] = useState(0)
@@ -55,6 +81,11 @@ const Admin = () => {
   const [loading, setLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userActivityOpen, setUserActivityOpen] = useState(false)
+  const [userActivityLoading, setUserActivityLoading] = useState(false)
+  const [userActivity, setUserActivity] = useState<ActivityLog[]>([])
+  const [activityTotal, setActivityTotal] = useState(0)
+  const [activityPage, setActivityPage] = useState(1)
+  const [activityPageSize] = useState(10)
 
   // Load users on component mount and when pagination/search changes
   useEffect(() => {
@@ -107,12 +138,37 @@ const Admin = () => {
     }
   }
 
-  const handleViewActivity = (user: User) => {
+  const handleViewActivity = async (user: User) => {
     setSelectedUser(user)
     setUserActivityOpen(true)
+    setActivityPage(1) // Reset to first page
+    await loadUserActivity(user.id, 1)
+  }
+
+  const loadUserActivity = async (userId: number, page: number) => {
+    try {
+      setUserActivityLoading(true)
+      const response = await adminService.getUserActivity(userId, page, activityPageSize)
+      setUserActivity(response.activity)
+      setActivityTotal(response.total)
+      setActivityPage(page)
+    } catch (error) {
+      toast.error('Failed to load user activity')
+      console.error(error)
+    } finally {
+      setUserActivityLoading(false)
+    }
+  }
+
+  const handleActivityPageChange = (newPage: number) => {
+    if (selectedUser) {
+      setActivityPage(newPage)
+      loadUserActivity(selectedUser.id, newPage)
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize)
+  const totalActivityPages = Math.ceil(activityTotal / activityPageSize)
 
   return (
     <div className='container py-10'>
@@ -177,9 +233,7 @@ const Admin = () => {
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell>
-                  {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
-                </TableCell>
+                <TableCell>{formatDate(user.last_login)}</TableCell>
                 <TableCell>
                   <Button variant='outline' size='sm' onClick={() => handleViewActivity(user)}>
                     View Activity
@@ -226,7 +280,7 @@ const Admin = () => {
 
       {/* User Activity Dialog */}
       <Dialog open={userActivityOpen} onOpenChange={setUserActivityOpen}>
-        <DialogContent className='sm:max-w-[625px]'>
+        <DialogContent className='sm:max-w-[700px]'>
           <DialogHeader>
             <DialogTitle>User Activity: {selectedUser?.username}</DialogTitle>
           </DialogHeader>
@@ -238,25 +292,82 @@ const Admin = () => {
                 <div>Email: {selectedUser?.email}</div>
                 <div>Role: {selectedUser?.role}</div>
                 <div>Status: {selectedUser?.active ? 'Active' : 'Inactive'}</div>
-                <div>
-                  Last Login:{' '}
-                  {selectedUser?.last_login
-                    ? new Date(selectedUser.last_login).toLocaleString()
-                    : 'Never'}
-                </div>
-                <div>
-                  Created:{' '}
-                  {selectedUser?.created_at
-                    ? new Date(selectedUser.created_at).toLocaleString()
-                    : 'Unknown'}
-                </div>
+                <div>Last Login: {formatDate(selectedUser?.last_login)}</div>
+                <div>Created: {formatDate(selectedUser?.created_at)}</div>
               </div>
             </div>
             <div className='rounded border p-4'>
               <h3 className='mb-2 font-medium'>Activity Log</h3>
-              <p className='text-muted-foreground italic'>
-                Activity logging coming soon. This will track user actions in the system.
-              </p>
+
+              {userActivityLoading ? (
+                <div className='py-4 text-center'>Loading activity...</div>
+              ) : userActivity.length > 0 ? (
+                <>
+                  <div className='max-h-96 overflow-auto'>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Entity</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userActivity.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell>
+                              <Badge variant={getLogTypeBadge(log.log_type)}>{log.log_type}</Badge>
+                            </TableCell>
+                            <TableCell>{log.entity_type}</TableCell>
+                            <TableCell>{log.description}</TableCell>
+                            <TableCell>
+                              <div className='flex items-center'>
+                                <Clock className='mr-1 h-3 w-3' />
+                                {formatDate(log.created_at)}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Activity Pagination */}
+                  <div className='mt-4 flex items-center justify-between'>
+                    <div>
+                      Showing {userActivity.length} of {activityTotal} logs
+                    </div>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => handleActivityPageChange(Math.max(1, activityPage - 1))}
+                        disabled={activityPage === 1 || userActivityLoading}
+                      >
+                        Previous
+                      </Button>
+                      <span className='flex items-center px-2 text-sm'>
+                        Page {activityPage} of {totalActivityPages || 1}
+                      </span>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() =>
+                          handleActivityPageChange(Math.min(totalActivityPages, activityPage + 1))
+                        }
+                        disabled={activityPage >= totalActivityPages || userActivityLoading}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className='text-muted-foreground py-4 text-center italic'>
+                  No activity logs found for this user.
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

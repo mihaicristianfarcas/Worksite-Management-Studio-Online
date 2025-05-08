@@ -77,6 +77,12 @@ func (c *authController) Login(ctx echo.Context) error {
 	// Clear sensitive data
 	user.PasswordHash = ""
 	
+	// Store auth info in context for logging middleware
+	ctx.Set("auth_response", map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+	})
+	
 	return ctx.JSON(http.StatusOK, LoginResponse{
 		Token: token,
 		User:  user,
@@ -134,8 +140,14 @@ func (c *authController) Register(ctx echo.Context) error {
 	// Clear sensitive data
 	user.PasswordHash = ""
 	
+	// Store auth info in context for logging middleware
+	ctx.Set("auth_response", map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+	})
+	
 	return ctx.JSON(http.StatusCreated, LoginResponse{
 		Token: token,
 		User:  user,
 	})
-} 
+}
