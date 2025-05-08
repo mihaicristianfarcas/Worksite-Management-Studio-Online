@@ -61,6 +61,7 @@ export type User = {
 export type PaginationParams = {
   page: number
   pageSize: number
+  search?: string
 }
 
 export type PaginatedResponse<T> = {
