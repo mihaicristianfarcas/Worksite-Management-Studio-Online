@@ -58,7 +58,7 @@ func InitDB() {
 	sqlDB.SetConnMaxLifetime(1 * time.Hour) // Maximum connection lifetime
 
 	// Auto Migrate the schema with optimized indices
-	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{}, &model.WorkerProject{})
+	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{}, &model.WorkerProject{}, &model.ActivityLog{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -96,6 +96,13 @@ func createIndexes(db *gorm.DB) {
 
 	// Add index for user_id in worker_projects table
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_worker_projects_user_id ON worker_projects(user_id)")
+	
+	// Add indexes for ActivityLog table
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_activity_logs_log_type ON activity_logs(log_type)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_activity_logs_entity_type ON activity_logs(entity_type)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_activity_logs_entity_id ON activity_logs(entity_id)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)")
 	
 	log.Println("Database indexes created successfully")
 }

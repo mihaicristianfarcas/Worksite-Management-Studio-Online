@@ -4,14 +4,16 @@ import { authService } from './auth.service'
 // API base URL
 const API_URL = 'http://localhost:8080/api/admin'
 
-// Activity log type
+// Activity log type aligned with backend
 export type ActivityLog = {
   id: number
-  userId: number
-  action: string
-  details: string
-  ipAddress?: string
-  timestamp: string
+  user_id: number
+  username: string
+  log_type: string
+  entity_type: string
+  entity_id?: number
+  description: string
+  created_at: string
 }
 
 // Admin service types
@@ -22,9 +24,12 @@ export type PaginatedUsersResponse = {
   pageSize: number
 }
 
-export type UserActivity = {
+export type UserActivityResponse = {
   user: User
   activity: ActivityLog[]
+  total: number
+  page: number
+  pageSize: number
 }
 
 /**
@@ -100,10 +105,15 @@ export const adminService = {
   },
 
   /**
-   * Get user activity
+   * Get user activity with pagination
    */
-  async getUserActivity(userId: number): Promise<UserActivity> {
-    const response = await fetch(`${API_URL}/users/${userId}/activity`, {
+  async getUserActivity(userId: number, page = 1, pageSize = 10): Promise<UserActivityResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString()
+    })
+
+    const response = await fetch(`${API_URL}/users/${userId}/activity?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

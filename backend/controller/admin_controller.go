@@ -17,11 +17,13 @@ type AdminController interface {
 
 type adminController struct {
 	userRepo repository.UserRepository
+	logRepo  *repository.LogRepository
 }
 
-func NewAdminController(userRepo repository.UserRepository) AdminController {
+func NewAdminController(userRepo repository.UserRepository, logRepo *repository.LogRepository) AdminController {
 	return &adminController{
 		userRepo: userRepo,
+		logRepo:  logRepo,
 	}
 }
 
@@ -115,7 +117,7 @@ func (c *adminController) UpdateUserRole(ctx echo.Context) error {
 	})
 }
 
-// GetUserActivity returns a user's recent activity (placeholder for now, will be expanded with logging)
+// GetUserActivity returns a user's recent activity
 func (c *adminController) GetUserActivity(ctx echo.Context) error {
 	// Get user ID from path parameter
 	userID, err := strconv.Atoi(ctx.Param("id"))
@@ -129,7 +131,23 @@ func (c *adminController) GetUserActivity(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "User not found")
 	}
 	
-	// Return basic user info for now (will be expanded with actual activity logs)
+	// Extract pagination parameters
+	page, _ := strconv.Atoi(ctx.QueryParam("page"))
+	if page < 1 {
+		page = 1
+	}
+	
+	pageSize, _ := strconv.Atoi(ctx.QueryParam("pageSize"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20 // Default page size
+	}
+	
+	// Get user activity logs
+	logs, total, err := c.logRepo.GetLogsByUser(uint(userID), page, pageSize)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user activity")
+	}
+	
 	return ctx.JSON(http.StatusOK, map[string]interface{}{
 		"user": map[string]interface{}{
 			"id":         user.ID,
@@ -140,6 +158,9 @@ func (c *adminController) GetUserActivity(ctx echo.Context) error {
 			"last_login": user.LastLogin,
 			"created_at": user.CreatedAt,
 		},
-		"activity": []interface{}{}, // Empty for now, will be populated with actual logs
+		"activity": logs,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
 	})
 } 
