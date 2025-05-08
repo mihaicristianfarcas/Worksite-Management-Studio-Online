@@ -13,7 +13,7 @@ type Worker struct {
 	Position  string         `json:"position" validate:"required,min=2,max=50"`
 	Salary    int            `json:"salary" validate:"required,min=0"`
 	UserID    uint           `json:"user_id" gorm:"index" validate:"required"`
-	Projects  []Project      `json:"projects" gorm:"many2many:worker_projects;"`
+	Projects  []Project      `json:"projects" gorm:"many2many:worker_projects;joinForeignKey:WorkerID;joinReferences:ProjectID"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt  `json:"deleted_at" gorm:"index"`

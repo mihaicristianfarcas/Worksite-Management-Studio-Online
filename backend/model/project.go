@@ -16,7 +16,7 @@ type Project struct {
 	Latitude    float64        `json:"latitude" validate:"required,latitude"`
 	Longitude   float64        `json:"longitude" validate:"required,longitude"`
 	UserID      uint           `json:"user_id" gorm:"index" validate:"required"`
-	Workers     []Worker       `json:"workers" gorm:"many2many:worker_projects;"`
+	Workers     []Worker       `json:"workers" gorm:"many2many:worker_projects;joinForeignKey:ProjectID;joinReferences:WorkerID"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at" gorm:"index"`

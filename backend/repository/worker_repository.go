@@ -24,7 +24,11 @@ func (r *WorkerRepository) Create(worker *model.Worker) error {
 // GetByID retrieves a worker by ID and user ID
 func (r *WorkerRepository) GetByID(id uint, userID uint) (*model.Worker, error) {
 	var worker model.Worker
-	err := r.db.Preload("Projects").Where("id = ? AND user_id = ?", id, userID).First(&worker).Error
+	// Use preload with a custom join query to check both project's user_id and join table's user_id
+	err := r.db.Preload("Projects", func(db *gorm.DB) *gorm.DB {
+		return db.Joins("JOIN worker_projects ON worker_projects.project_id = projects.id").
+			Where("projects.user_id = ? AND worker_projects.user_id = ?", userID, userID)
+	}).Where("id = ? AND user_id = ?", id, userID).First(&worker).Error
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +82,12 @@ func (r *WorkerRepository) GetAll(userID uint, filters map[string]interface{}, s
 		query = query.Offset(offset).Limit(pageSize)
 	}
 
-	err := query.Preload("Projects").Find(&workers).Error
+	// Add user_id condition to the preloaded Projects to ensure we only get projects belonging to the current user
+	// Also ensure the worker_projects join table has the correct user_id
+	err := query.Preload("Projects", func(db *gorm.DB) *gorm.DB {
+		return db.Joins("JOIN worker_projects ON worker_projects.project_id = projects.id").
+			Where("projects.user_id = ? AND worker_projects.user_id = ?", userID, userID)
+	}).Find(&workers).Error
 	return workers, total, err
 }
 
@@ -112,7 +121,15 @@ func (r *WorkerRepository) AddToProject(workerID, projectID, userID uint) error 
 		return err
 	}
 	
-	return r.db.Model(worker).Association("Projects").Append(project)
+	// Create the join record with user_id
+	workerProject := &model.WorkerProject{
+		WorkerID:  workerID,
+		ProjectID: projectID,
+		UserID:    userID,
+	}
+	
+	// Use the custom join table to create the relationship
+	return r.db.Create(workerProject).Error
 }
 
 // RemoveFromProject removes a worker from a project (ensuring both belong to the user)
@@ -129,5 +146,7 @@ func (r *WorkerRepository) RemoveFromProject(workerID, projectID, userID uint) e
 		return err
 	}
 	
-	return r.db.Model(worker).Association("Projects").Delete(project)
+	// Delete the join record that has the appropriate worker_id, project_id AND user_id
+	return r.db.Where("worker_id = ? AND project_id = ? AND user_id = ?", 
+		workerID, projectID, userID).Delete(&model.WorkerProject{}).Error
 } 
