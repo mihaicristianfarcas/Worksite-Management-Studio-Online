@@ -58,7 +58,7 @@ func InitDB() {
 	sqlDB.SetConnMaxLifetime(1 * time.Hour) // Maximum connection lifetime
 
 	// Auto Migrate the schema with optimized indices
-	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{}, &model.WorkerProject{}, &model.ActivityLog{})
+	err = db.AutoMigrate(&model.Worker{}, &model.Project{}, &model.User{}, &model.WorkerProject{}, &model.ActivityLog{}, &model.MonitoredUser{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

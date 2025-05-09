@@ -22,9 +22,6 @@ func main() {
 	// Initialize the database
 	config.InitDB()
 	
-	// Migrate models - ensure MonitoredUser is included
-	config.DB.AutoMigrate(&model.MonitoredUser{})
-	
 	// Initialize the cache system
 	cache.InitCache()
 

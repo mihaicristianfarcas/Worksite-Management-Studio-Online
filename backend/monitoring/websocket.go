@@ -75,18 +75,27 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// In production, should check the origin
+		// Allow all origins in development
+		// In production, should check specific origins
+		origin := r.Header.Get("Origin")
+		log.Printf("WebSocket connection attempt from origin: %s", origin)
 		return true
 	},
 }
 
 // HandleWebSocketConnection handles a new WebSocket connection
 func (h *WebSocketHub) HandleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
+	// Log connection details for debugging
+	log.Printf("WebSocket connection attempt from: %s", r.RemoteAddr)
+	log.Printf("WebSocket token parameter: %s", r.URL.Query().Get("token"))
+	
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Error upgrading to WebSocket: %v", err)
 		return
 	}
+	
+	log.Println("WebSocket connection successfully upgraded")
 	
 	// Register the new client
 	h.register <- conn

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -207,6 +208,26 @@ func (c *monitoringController) GetRecentAlerts(ctx echo.Context) error {
 
 // HandleWebSocket handles WebSocket connection for real-time alerts
 func (c *monitoringController) HandleWebSocket(ctx echo.Context) error {
+	// Get user information from context (already validated by JWTMiddleware)
+	userID, ok := ctx.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+	
+	username, ok := ctx.Get("username").(string)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Username not found")
+	}
+	
+	role, ok := ctx.Get("role").(string)
+	if !ok || role != "admin" {
+		return echo.NewHTTPError(http.StatusForbidden, "Admin access required")
+	}
+	
+	// Log successful authentication
+	log.Printf("WebSocket authenticated for user: %s (ID: %d, Role: %s)", username, userID, role)
+	
+	// Handle the WebSocket connection
 	c.webSocketHub.HandleWebSocketConnection(ctx.Response(), ctx.Request())
 	return nil
 } 

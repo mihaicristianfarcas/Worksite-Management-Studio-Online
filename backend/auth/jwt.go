@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -54,6 +55,10 @@ func GenerateToken(user *model.User) (string, error) {
 
 // ValidateToken validates the JWT token and returns the claims
 func ValidateToken(tokenString string) (*JWTClaims, error) {
+	if tokenString == "" {
+		return nil, errors.New("empty token")
+	}
+	
 	jwtSecret := getEnv("JWT_SECRET", "your-secret-key-for-development")
 	
 	// Parse the JWT string and store the result in claims
@@ -66,6 +71,7 @@ func ValidateToken(tokenString string) (*JWTClaims, error) {
 	})
 	
 	if err != nil {
+		log.Printf("Error parsing token: %v", err)
 		return nil, err
 	}
 	

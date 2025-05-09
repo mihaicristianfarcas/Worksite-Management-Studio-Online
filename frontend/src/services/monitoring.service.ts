@@ -168,19 +168,36 @@ export const monitoringService = {
    * Create a WebSocket connection for real-time monitoring
    */
   createWebSocketConnection(): WebSocket {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    // Double-check authentication
+    if (!authService.isAuthenticated()) {
+      console.error('Authentication check failed - user not authenticated')
       throw new Error('Authentication required')
     }
 
-    const ws = new WebSocket(`ws://localhost:8080/ws/monitoring?token=${token}`)
+    const token = authService.getToken()
+    if (!token) {
+      console.error('Token retrieval failed - token is null or empty')
+      throw new Error('Authentication token missing')
+    }
+
+    console.log('Creating WebSocket connection with token:', token.substring(0, 10) + '...')
+
+    const wsUrl = `ws://localhost:8080/ws/monitoring?token=${token}`
+    const ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {
-      console.log('WebSocket connection established')
+      console.log('WebSocket connection established successfully')
     }
 
     ws.onerror = error => {
       console.error('WebSocket error:', error)
+
+      // Check if user is still authenticated
+      if (!authService.isAuthenticated()) {
+        console.error('Authentication session expired during WebSocket connection')
+        // We don't throw here because it would be uncaught in the WebSocket event handler
+        // Instead, we log the error for debugging
+      }
     }
 
     return ws

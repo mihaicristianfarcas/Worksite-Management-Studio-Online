@@ -1,31 +1,56 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 )
 
-// JWTMiddleware checks for a valid JWT token in the Authorization header
+// JWTMiddleware checks for a valid JWT token in the Authorization header or query parameter
 func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Get the Authorization header
-		authHeader := c.Request().Header.Get("Authorization")
+		var tokenString string
 		
-		// Check if the header is empty or doesn't start with "Bearer "
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Missing or invalid authorization token")
+		// First check the Authorization header
+		authHeader := c.Request().Header.Get("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			if len(tokenString) > 10 {
+				log.Printf("Token found in Authorization header: %s...", tokenString[:10])
+			} else {
+				log.Printf("Token found in Authorization header (short token)")
+			}
 		}
 		
-		// Extract the token from the header
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		// If no token in header, check query parameter (for WebSocket connections)
+		if tokenString == "" {
+			tokenString = c.QueryParam("token")
+			if tokenString != "" {
+				if len(tokenString) > 10 {
+					log.Printf("Token found in query parameter: %s...", tokenString[:10])
+				} else {
+					log.Printf("Token found in query parameter (short token)")
+				}
+			}
+		}
+		
+		// Return error if no token found in either location
+		if tokenString == "" {
+			log.Printf("No token found in request from %s", c.Request().RemoteAddr)
+			return echo.NewHTTPError(http.StatusUnauthorized, "Missing authorization token")
+		}
 		
 		// Validate the token
 		claims, err := ValidateToken(tokenString)
 		if err != nil {
+			log.Printf("Token validation failed: %v", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired token")
 		}
+		
+		log.Printf("Token validated successfully for user: %s (ID: %d, Role: %s)", 
+			claims.Username, claims.UserID, claims.Role)
 		
 		// Set user information in the context
 		c.Set("user_id", claims.UserID)
