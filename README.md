@@ -2,8 +2,6 @@
 
 A comprehensive web application for managing construction worksites, projects, and workers with real-time monitoring capabilities.
 
-![Worksite Management Studio](https://via.placeholder.com/800x400?text=Worksite+Management+Studio)
-
 ## Overview
 
 Worksite Management Studio Online is a full-stack application designed to help construction companies efficiently manage their projects, worksites, and workforce. The application provides real-time tracking, resource allocation, and reporting capabilities to optimize construction operations.
@@ -77,7 +75,6 @@ The application follows a modern client-server architecture:
 - Node.js 18+ and npm/pnpm
 - Go 1.18+
 - PostgreSQL 14+
-- Redis (optional, for caching)
 
 ### Backend Setup
 
@@ -134,8 +131,6 @@ The backend provides a RESTful API with the following main endpoints:
 - **Projects**: `/api/projects`
 - **Admin**: `/api/admin/users`, `/api/admin/users/:id/activity`
 
-For detailed API documentation, refer to the API documentation [link to be added].
-
 ## Contributing
 
 1. Fork the repository
@@ -146,7 +141,7 @@ For detailed API documentation, refer to the API documentation [link to be added
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## Acknowledgments
 
