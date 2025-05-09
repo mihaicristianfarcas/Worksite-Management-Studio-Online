@@ -56,7 +56,6 @@ Worksite Management Studio Online is a full-stack application designed to help c
 - GORM for database operations
 - PostgreSQL database
 - JWT authentication
-- Redis for caching
 
 ## Architecture
 
@@ -65,7 +64,7 @@ The application follows a modern client-server architecture:
 - **Frontend**: Single-page application (SPA) built with React and TypeScript
 - **Backend**: RESTful API built with Go/Echo framework
 - **Database**: PostgreSQL for data persistence
-- **Cache Layer**: Redis for optimized performance
+- **Cache Layer**: For optimized performance
 - **Security**: JWT-based authentication and middleware protection
 
 ## Getting Started
