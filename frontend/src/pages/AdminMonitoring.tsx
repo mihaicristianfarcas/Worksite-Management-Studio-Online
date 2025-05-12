@@ -77,77 +77,41 @@ const AdminMonitoring = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    let retryCount = 0
-    const maxRetries = 3
-    let wsConnection: WebSocket | null = null
-
-    const connectWebSocket = () => {
-      try {
-        // Check first if we're authenticated
-        if (!authService.isAuthenticated()) {
-          console.error('User is not authenticated, cannot establish WebSocket connection')
-          toast.error('Authentication required for real-time monitoring')
-          return
-        }
-
-        if (retryCount >= maxRetries) {
-          toast.error('Failed to connect to real-time monitoring after multiple attempts')
-          return
-        }
-
-        // Close existing connection if any
-        if (wsRef.current) {
-          wsRef.current.close()
-        }
-
-        console.log('Creating WebSocket connection...')
-        wsRef.current = monitoringService.createWebSocketConnection()
-        wsConnection = wsRef.current
-
-        wsRef.current.onmessage = event => {
-          const message = JSON.parse(event.data) as AlertMessage
-          if (message.type === 'suspicious_activity') {
-            // Add new alert to real-time list
-            setRealTimeAlerts(prev => [message, ...prev].slice(0, 20)) // Keep most recent 20
-
-            // Show toast notification
-            toast.error(`Suspicious activity detected for user ${message.activity.username}`, {
-              description: message.activity.description,
-              action: {
-                label: 'View',
-                onClick: () => loadMonitoredUsers()
-              }
-            })
-          }
-        }
-
-        // Handle when connection is closed
-        wsRef.current.onclose = event => {
-          console.log('WebSocket connection closed', event)
-          // Only retry if this wasn't an intentional close and we're still authenticated
-          if (
-            retryCount < maxRetries &&
-            wsConnection === wsRef.current &&
-            authService.isAuthenticated()
-          ) {
-            retryCount++
-            setTimeout(connectWebSocket, 2000) // Retry after 2 seconds
-          }
-        }
-      } catch (error) {
-        console.error('WebSocket initialization error:', error)
-        toast.error('Failed to connect to real-time monitoring')
-
-        // Only retry if we're still authenticated
-        if (authService.isAuthenticated() && retryCount < maxRetries) {
-          retryCount++
-          setTimeout(connectWebSocket, 2000)
-        }
-      }
+    // Check authentication before creating WebSocket
+    if (!authService.isAuthenticated()) {
+      return
     }
 
-    // Initial connection
-    connectWebSocket()
+    try {
+      // Create and store WebSocket connection
+      wsRef.current = monitoringService.createWebSocketConnection()
+
+      // Handle incoming messages
+      wsRef.current.onmessage = event => {
+        const message = JSON.parse(event.data) as AlertMessage
+        if (message.type === 'suspicious_activity') {
+          // Add new alert to real-time list
+          setRealTimeAlerts(prev => [message, ...prev].slice(0, 20)) // Keep most recent 20
+
+          // Show toast notification
+          toast.error(`Suspicious activity detected for user ${message.activity.username}`, {
+            description: message.activity.description,
+            action: {
+              label: 'View',
+              onClick: () => loadMonitoredUsers()
+            }
+          })
+        }
+      }
+
+      // Handle connection closed
+      wsRef.current.onclose = () => {
+        console.log('WebSocket connection closed')
+      }
+    } catch (error) {
+      console.error('WebSocket initialization error:', error)
+      toast.error('Failed to connect to real-time monitoring')
+    }
 
     // Clean up WebSocket on unmount
     return () => {
