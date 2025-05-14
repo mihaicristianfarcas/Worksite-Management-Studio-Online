@@ -15,12 +15,19 @@ import (
 var DB *gorm.DB
 
 func InitDB() {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+	sslMode := getEnv("DB_SSL_MODE", "disable")
+	if os.Getenv("ENV") == "production" {
+		// Default to require SSL in production unless explicitly overridden
+		sslMode = getEnv("DB_SSL_MODE", "require")
+	}
+	
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_USER", "mihaicristianfarcas"),
 		getEnv("DB_PASSWORD", "postgres"),
-		getEnv("DB_NAME", "worksite_management_individual_entities"),
+		getEnv("DB_NAME", "worksite_management"),
 		getEnv("DB_PORT", "5432"),
+		sslMode,
 	)
 
 	// Configure GORM logger
@@ -110,6 +117,11 @@ func createIndexes(db *gorm.DB) {
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
+		// In production, don't use defaults for sensitive information
+		if os.Getenv("ENV") == "production" && 
+		   (key == "DB_PASSWORD" || key == "JWT_SECRET") {
+			log.Fatalf("Environment variable %s must be set in production mode", key)
+		}
 		return defaultValue
 	}
 	return value

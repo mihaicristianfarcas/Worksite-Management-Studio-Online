@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
@@ -20,11 +21,23 @@ type JWTClaims struct {
 
 // Generate JWT token for a user
 func GenerateToken(user *model.User) (string, error) {
-	// Get the JWT secret from environment or use a default for development
-	jwtSecret := getEnv("JWT_SECRET", "your-secret-key-for-development")
+	// Get the JWT secret from environment
+	jwtSecret := getEnv("JWT_SECRET", "")
 	
-	// Set expiration time (24 hours from now)
-	expirationTime := time.Now().Add(24 * time.Hour)
+	// Ensure a secret is set
+	if jwtSecret == "" {
+		return "", errors.New("JWT_SECRET environment variable must be set")
+	}
+	
+	// Get expiration duration from environment variable, default to 24 hours
+	expirationStr := getEnv("JWT_EXPIRATION_HOURS", "24")
+	expirationHours, err := strconv.Atoi(expirationStr)
+	if err != nil {
+		expirationHours = 24 // Default to 24 hours if parsing fails
+	}
+	
+	// Set expiration time
+	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
 	
 	// Create claims with user information
 	claims := &JWTClaims{
@@ -54,7 +67,12 @@ func GenerateToken(user *model.User) (string, error) {
 
 // ValidateToken validates the JWT token and returns the claims
 func ValidateToken(tokenString string) (*JWTClaims, error) {
-	jwtSecret := getEnv("JWT_SECRET", "your-secret-key-for-development")
+	jwtSecret := getEnv("JWT_SECRET", "")
+	
+	// Ensure a secret is set
+	if jwtSecret == "" {
+		return nil, errors.New("JWT_SECRET environment variable must be set")
+	}
 	
 	// Parse the JWT string and store the result in claims
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {

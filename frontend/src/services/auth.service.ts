@@ -1,7 +1,7 @@
 import { User } from '@/services/types'
 
 // API base URL
-const API_URL = 'http://localhost:8080/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 // Define login request type
 export type LoginRequest = {
@@ -100,7 +100,8 @@ export const authService = {
 
     try {
       return JSON.parse(userJson)
-    } catch (_) {
+    } catch (error) {
+      console.error('Error parsing user data:', error)
       this.logout()
       return null
     }

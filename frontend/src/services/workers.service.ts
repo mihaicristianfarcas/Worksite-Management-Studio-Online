@@ -2,7 +2,7 @@ import { Worker, WorkerFilters, PaginationParams, PaginatedResponse } from '@/se
 import { authService } from '@/services/auth.service'
 
 // API base URL
-const API_URL = 'http://localhost:8080/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 /**
  * Workers API service

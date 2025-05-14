@@ -2,7 +2,9 @@ import { User } from '@/services/types'
 import { authService } from './auth.service'
 
 // API base URL
-const API_URL = 'http://localhost:8080/api/admin'
+const API_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/admin`
+  : 'http://localhost:8080/api/admin'
 
 // Activity log type aligned with backend
 export type ActivityLog = {

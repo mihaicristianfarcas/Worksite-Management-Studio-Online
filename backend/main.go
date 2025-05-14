@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/auth"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/cache"
@@ -24,9 +26,15 @@ func main() {
 	// New Echo instance
 	e := echo.New()
 
+	// Get allowed origins from environment variable or use default
+	allowedOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173"}
+	if origins := os.Getenv("ALLOWED_ORIGINS"); origins != "" {
+		allowedOrigins = strings.Split(origins, ",")
+	}
+
 	// CORS middleware
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:5173", "http://127.0.0.1:5173"}, // Your frontend URL
+		AllowOrigins: allowedOrigins,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowHeaders: []string{"Content-Type", "Authorization", "Accept"},
 		AllowCredentials: true,
@@ -80,6 +88,20 @@ func main() {
 	admin.PUT("/users/:id/role", adminCtrl.UpdateUserRole)
 	admin.GET("/users/:id/activity", adminCtrl.GetUserActivity)
 
-	// Start the server
-	e.Logger.Fatal(e.Start(":8080"))
+	// Get port from environment or use default
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Check if TLS is enabled
+	tlsEnabled := os.Getenv("TLS_ENABLED") == "true"
+	certFile := os.Getenv("TLS_CERT_FILE")
+	keyFile := os.Getenv("TLS_KEY_FILE")
+
+	if tlsEnabled && certFile != "" && keyFile != "" {
+		e.Logger.Fatal(e.StartTLS(":"+port, certFile, keyFile))
+	} else {
+		e.Logger.Fatal(e.Start(":"+port))
+	}
 }
