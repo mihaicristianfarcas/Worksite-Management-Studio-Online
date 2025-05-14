@@ -14,6 +14,7 @@ import { useProjectsManagement } from '@/hooks/use-projects-management'
 import ProjectCarousel from '@/components/projects/project-carousel'
 import ProjectDetails from '@/components/projects/project-details'
 import ProjectFiltersBar from '@/components/projects/project-filters'
+import { Project } from '@/services/types'
 
 export default function Projects() {
   const {
@@ -131,7 +132,7 @@ export default function Projects() {
             <DialogTitle>Add New Project</DialogTitle>
             <DialogDescription>Create a new project in the database.</DialogDescription>
           </DialogHeader>
-          <AddProjectForm onAddProject={project => handleAddProject(project as any)} />
+          <AddProjectForm onAddProject={project => handleAddProject(project as Project)} />
         </DialogContent>
       </Dialog>
 
