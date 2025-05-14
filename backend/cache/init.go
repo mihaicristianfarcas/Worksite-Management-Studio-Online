@@ -64,9 +64,3 @@ func stringify(value interface{}) string {
 		return fmt.Sprintf("%v", v)
 	}
 }
-
-// toString is a helper to convert values to strings
-func toString(v interface{}) string {
-	// Type assertion to check if value implements Stringer interface
-	return toString(v)
-} 
