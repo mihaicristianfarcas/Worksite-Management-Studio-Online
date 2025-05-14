@@ -171,9 +171,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ loadingState: 'loading', error: null })
 
     try {
-      const workers = await projectsService.getAvailableWorkers(projectId)
+      const response = await projectsService.getAvailableWorkers(projectId)
       set({ loadingState: 'idle' })
-      return workers
+      // Extract workers array from paginated response
+      return response.data
     } catch (error) {
       console.error('Error getting available workers:', error)
       set({

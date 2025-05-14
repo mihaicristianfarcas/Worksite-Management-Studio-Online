@@ -17,8 +17,6 @@ interface WorkersState {
     pageSize: number
     total: number
   }
-  lastFetchTime: number | null
-  cacheTimeout: number // milliseconds
 
   // Actions
   fetchWorkers: (filters?: WorkerFilters, page?: number, pageSize?: number) => Promise<Worker[]>
@@ -40,8 +38,6 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
     pageSize: 10,
     total: 0
   },
-  lastFetchTime: null,
-  cacheTimeout: 5 * 60 * 1000, // 5 minutes cache
 
   setFilters: (filters: WorkerFilters) => {
     set({ filters, pagination: { ...get().pagination, page: 1 } })
@@ -53,19 +49,6 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
 
   fetchWorkers: async (filters?: WorkerFilters, page?: number, pageSize?: number) => {
     const currentState = get()
-    const currentTime = Date.now()
-
-    // Check if we have cached data that's still valid
-    if (
-      currentState.lastFetchTime &&
-      currentTime - currentState.lastFetchTime < currentState.cacheTimeout &&
-      currentState.loadingState === 'success' &&
-      JSON.stringify(currentState.filters) === JSON.stringify(filters || {}) &&
-      currentState.pagination.page === (page || currentState.pagination.page) &&
-      currentState.pagination.pageSize === (pageSize || currentState.pagination.pageSize)
-    ) {
-      return currentState.workers
-    }
 
     set({ loadingState: 'loading', error: null })
     console.log('Fetching workers with filters:', filters)
@@ -88,8 +71,7 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
           page: paginationParams.page,
           pageSize: paginationParams.pageSize,
           total: result.total || 0
-        },
-        lastFetchTime: currentTime
+        }
       })
 
       return result.data || []

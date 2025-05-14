@@ -121,7 +121,7 @@ export function WorkersDataTable({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, columnId, filterValue) => {
+    globalFilterFn: (row, _, filterValue) => {
       const search = filterValue.toLowerCase()
       return Object.values(row.original).some(value => {
         if (typeof value === 'object' && value !== null) {

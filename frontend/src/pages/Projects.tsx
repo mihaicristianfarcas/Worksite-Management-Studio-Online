@@ -131,7 +131,7 @@ export default function Projects() {
             <DialogTitle>Add New Project</DialogTitle>
             <DialogDescription>Create a new project in the database.</DialogDescription>
           </DialogHeader>
-          <AddProjectForm onAddProject={handleAddProject} />
+          <AddProjectForm onAddProject={project => handleAddProject(project as any)} />
         </DialogContent>
       </Dialog>
 

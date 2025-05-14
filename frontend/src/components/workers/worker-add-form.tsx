@@ -28,7 +28,7 @@ export default function AddWorkerForm({ onAddWorker }: AddWorkerFormProps) {
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    await onAddWorker({ ...data, id: 0 }) // id will be set by backend
+    await onAddWorker({ ...data, id: 0, user_id: 0 }) // id and user_id will be set by backend
     reset()
   }
 

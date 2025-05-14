@@ -30,7 +30,7 @@ export function useWorkersColumns({
         ? [
             {
               id: 'select',
-              header: ({ table }) => (
+              header: ({ table }: { table: any }) => (
                 <Checkbox
                   checked={
                     table.getIsAllPageRowsSelected() ||
@@ -41,7 +41,7 @@ export function useWorkersColumns({
                   className='mx-auto'
                 />
               ),
-              cell: ({ row }) => (
+              cell: ({ row }: { row: any }) => (
                 <Checkbox
                   checked={row.getIsSelected()}
                   onCheckedChange={value => row.toggleSelected(!!value)}
