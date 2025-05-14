@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import PageTitle from '@/components/page-title'
 
 // Custom Switch component since @/components/ui/switch doesn't exist
 const Switch = ({
@@ -172,7 +173,7 @@ const Admin = () => {
 
   return (
     <div className='container py-10'>
-      <h1 className='mb-6 text-2xl font-bold'>Admin Dashboard</h1>
+      <PageTitle>Admin Dashboard</PageTitle>
 
       {/* Search Form */}
       <form onSubmit={handleSearch} className='mb-6 flex gap-2'>
