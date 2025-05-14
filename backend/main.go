@@ -12,6 +12,7 @@ import (
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/middleware"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/model"
 	"github.com/Forquosh/Worksite-Management-Studio-Online/backend/repository"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -25,6 +26,12 @@ func main() {
 
 	// New Echo instance
 	e := echo.New()
+
+	// Load environment variables
+	err := godotenv.Load()
+	if err != nil {
+		e.Logger.Fatal("Error loading .env file")
+	}
 
 	// Get allowed origins from environment variable or use default
 	allowedOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173"}
@@ -95,13 +102,16 @@ func main() {
 	}
 
 	// Check if TLS is enabled
-	tlsEnabled := os.Getenv("TLS_ENABLED") == "true"
-	certFile := os.Getenv("TLS_CERT_FILE")
-	keyFile := os.Getenv("TLS_KEY_FILE")
+	// tlsEnabled := os.Getenv("TLS_ENABLED") == "true"
+	// certFile := os.Getenv("TLS_CERT_FILE")
+	// keyFile := os.Getenv("TLS_KEY_FILE")
 
-	if tlsEnabled && certFile != "" && keyFile != "" {
-		e.Logger.Fatal(e.StartTLS(":"+port, certFile, keyFile))
-	} else {
-		e.Logger.Fatal(e.Start(":"+port))
-	}
+	// if tlsEnabled && certFile != "" && keyFile != "" {
+	// 	e.Logger.Fatal(e.StartTLS(":"+port, certFile, keyFile))
+	// } else {
+	// 	e.Logger.Fatal(e.Start(":"+port))
+	// }
+
+	e.Logger.Fatal(e.Start(":"+port))
+
 }
