@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Project represents a construction project with associated workers
 type Project struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
 	Name        string         `json:"name" validate:"required,min=2,max=100"`

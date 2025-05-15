@@ -82,6 +82,7 @@ func (r *ProjectRepository) GetAll(userID uint, filters map[string]interface{}, 
 		return db.Joins("JOIN worker_projects ON worker_projects.worker_id = workers.id").
 			Where("workers.user_id = ? AND worker_projects.user_id = ?", userID, userID)
 	}).Find(&projects).Error
+	
 	return projects, total, err
 }
 

@@ -24,7 +24,6 @@ func NewActivityLogger(logRepo *repository.LogRepository) *ActivityLogger {
 }
 
 // LogCRUDOperation logs important operations (create, update, delete) for specified resources
-// Read operations are no longer logged to reduce database clutter
 func (l *ActivityLogger) LogCRUDOperation(entityType model.EntityType) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -64,7 +63,6 @@ func (l *ActivityLogger) LogCRUDOperation(entityType model.EntityType) echo.Midd
 			case http.MethodDelete:
 				logType = model.LogTypeDelete
 			default:
-				// Unknown method, don't log
 				return nil
 			}
 
@@ -78,13 +76,13 @@ func (l *ActivityLogger) LogCRUDOperation(entityType model.EntityType) echo.Midd
 				}
 			}
 
-			// Create simplified description based on the operation
+			// Create description based on the operation
 			description := fmt.Sprintf("%s %s", logType, entityType)
 			if entityID > 0 {
 				description = fmt.Sprintf("%s with ID: %d", description, entityID)
 			}
 
-			// Create simplified log entry (removed IP and UserAgent)
+			// Create log entry
 			log := &model.ActivityLog{
 				UserID:      userID,
 				Username:    username,
@@ -118,9 +116,6 @@ func (l *ActivityLogger) LogUserAuth(logType model.LogType) echo.MiddlewareFunc 
 			if err != nil {
 				return err
 			}
-
-			// For auth events, we need to extract user info after the handler
-			// has processed the request (e.g., after successful login)
 			
 			// Check response status to see if the auth operation was successful
 			// This assumes auth handlers set userID in response
