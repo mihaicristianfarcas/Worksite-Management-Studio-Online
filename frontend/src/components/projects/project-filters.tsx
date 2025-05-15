@@ -1,10 +1,7 @@
 import { ProjectFilters } from '@/api/model/project'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Filter, Plus, RefreshCcwDot, Search } from 'lucide-react'
-import React from 'react'
+import { Plus, RefreshCcwDot, Search } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -16,36 +13,24 @@ import {
 interface ProjectFiltersBarProps {
   searchTerm: string
   filters: ProjectFilters
-  tempFilters: ProjectFilters
-  filterPopoverOpen: boolean
   loadingState: 'idle' | 'loading' | 'error'
   onSearchChange: (value: string) => void
   onSearch: () => void
-  onFilterChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onApplyFilters: () => void
   onResetFilters: () => void
-  onFilterPopoverChange: (open: boolean) => void
   onAddProject: () => void
   onManageWorkers?: () => void
   currentProjectName?: string
   onSortChange?: (field: string, order: 'asc' | 'desc') => void
 }
 
-const filterFields = [{ id: 'status', label: 'Status', type: 'text' }]
-
 // Toolbar component with search, filters, and add project button
 const ProjectFiltersBar = ({
   searchTerm,
   filters,
-  tempFilters,
-  filterPopoverOpen,
   loadingState,
   onSearchChange,
   onSearch,
-  onFilterChange,
-  onApplyFilters,
   onResetFilters,
-  onFilterPopoverChange,
   onAddProject,
   onManageWorkers,
   currentProjectName,
@@ -106,56 +91,6 @@ const ProjectFiltersBar = ({
         >
           <RefreshCcwDot className='h-4 w-4' />
         </Button>
-
-        {/* Filter Button with Popover */}
-        <Popover open={filterPopoverOpen} onOpenChange={onFilterPopoverChange}>
-          <PopoverTrigger asChild>
-            <Button variant='outline'>
-              <Filter className='mr-2 h-4 w-4' />
-              Filter
-              {Object.keys(filters).length > 0 && (
-                <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
-                  {
-                    Object.keys(filters).filter(
-                      key => key !== 'search' && key !== 'sortBy' && key !== 'sortOrder'
-                    ).length
-                  }
-                </span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className='w-80'>
-            <div className='grid gap-4'>
-              <div className='space-y-2'>
-                <h4 className='font-medium leading-none'>Filter Projects</h4>
-                <p className='text-muted-foreground text-sm'>
-                  Set filters to find specific projects
-                </p>
-              </div>
-              <div className='grid gap-2'>
-                {filterFields.map(field => (
-                  <div key={field.id} className='grid grid-cols-3 items-center gap-4'>
-                    <Label htmlFor={field.id}>{field.label}</Label>
-                    <Input
-                      id={field.id}
-                      name={field.id}
-                      type={field.type}
-                      className='col-span-2'
-                      value={tempFilters[field.id as keyof typeof tempFilters] || ''}
-                      onChange={onFilterChange}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className='flex justify-between'>
-                <Button variant='outline' onClick={onResetFilters}>
-                  Reset Filters
-                </Button>
-                <Button onClick={onApplyFilters}>Apply Filters</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
 
         {/* Worker Management Button */}
         <div className='min-w-56'>

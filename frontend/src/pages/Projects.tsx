@@ -13,233 +13,133 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import ProjectCarousel from '@/components/projects/project-carousel'
 import ProjectDetails from '@/components/projects/project-details'
 import ProjectFiltersBar from '@/components/projects/project-filters'
-import { Project, ProjectFilters } from '@/api/model/project'
-import { useState, useCallback, useEffect } from 'react'
+import { Project } from '@/api/model/project'
+import { useState, useEffect } from 'react'
 import { useProjectsStore } from '@/api/store/projects-store'
 import { toast } from 'sonner'
 import { type CarouselApi } from '@/components/ui/carousel'
+import { ProjectSchema } from '@/lib/schemas'
+import { z } from 'zod'
+import { projectsService } from '@/api/services/projects.service'
+
+// Type for project form values
+type ProjectFormValues = z.infer<typeof ProjectSchema>
 
 export default function Projects() {
-  const FIRST_PAGE = 1
-
   // Store state
   const {
     projects,
     pagination,
     loadingState,
     fetchProjects,
-    setFilters: setStoreFilters,
+    refreshProjects,
+    setFilters,
+    filters: storeFilters,
     addProject,
     updateProject,
     deleteProject
   } = useProjectsStore()
 
-  // Search and filter state
+  // Local UI state
   const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setLocalFilters] = useState<ProjectFilters>({})
-  const [tempFilters, setTempFilters] = useState<ProjectFilters>({})
-  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false)
+  const [currentProject, setCurrentProject] = useState<Project | null>(null)
 
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [workerDialogOpen, setWorkerDialogOpen] = useState(false)
 
-  // Carousel state
-  const [currentProject, setCurrentProject] = useState<Project | null>(null)
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null)
-
-  // Load projects when filters or pagination changes
+  // Load projects on mount
   useEffect(() => {
-    fetchProjects(filters, pagination.page, pagination.pageSize)
-  }, [fetchProjects, filters, pagination.page, pagination.pageSize])
+    fetchProjects(storeFilters, pagination.page, pagination.pageSize)
+  }, [storeFilters])
 
   // Set initial current project when projects load
   useEffect(() => {
-    if (projects.length > 0) {
-      if (currentProjectId) {
-        // Try to find the previously selected project
-        const previousProject = projects.find(p => p.id === currentProjectId)
-        if (previousProject) {
-          setCurrentProject(previousProject)
-        } else {
-          // If previous project not found, default to first project
-          setCurrentProject(projects[0])
-          setCurrentProjectId(projects[0].id)
-        }
-      } else if (!currentProject) {
-        // Initial load - set first project
-        setCurrentProject(projects[0])
-        setCurrentProjectId(projects[0].id)
+    if (projects.length > 0 && !currentProject) {
+      setCurrentProject(projects[0])
+    }
+  }, [projects, currentProject])
+
+  // Refresh the current project data (used when worker assignments change)
+  const refreshCurrentProject = async () => {
+    if (currentProject?.id) {
+      try {
+        const updatedProject = await projectsService.getById(currentProject.id)
+        // Update currentProject with fresh data from server
+        setCurrentProject(updatedProject)
+      } catch (err) {
+        console.error('Error refreshing project data:', err)
       }
     }
-  }, [projects, currentProjectId, currentProject])
-
-  // Helper functions for filters
-  const updateFilters = useCallback(
-    (updatedFilters: ProjectFilters) => {
-      setLocalFilters(updatedFilters)
-      setStoreFilters(updatedFilters)
-    },
-    [setStoreFilters]
-  )
-
-  // Optimized refresh function that preserves the current project
-  const refreshCarousel = useCallback(
-    (page = pagination.page, forceRefresh = false) => {
-      const projectIdToKeep = currentProjectId
-
-      // Always fetch from server when forceRefresh is true
-      if (forceRefresh) {
-        return fetchProjects(filters, page, pagination.pageSize).then(() => {
-          if (projectIdToKeep) {
-            setCurrentProjectId(projectIdToKeep)
-          }
-        })
-      }
-
-      return fetchProjects(filters, page, pagination.pageSize).then(() => {
-        if (projectIdToKeep) {
-          setCurrentProjectId(projectIdToKeep)
-        }
-      })
-    },
-    [fetchProjects, pagination.pageSize, currentProjectId, filters, pagination.page]
-  )
+  }
 
   // Search functionality
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value)
-  }, [])
-
-  const handleSearch = useCallback(() => {
-    const updatedFilters = {
-      ...filters,
+  const handleSearch = () => {
+    const newFilters = {
+      ...storeFilters,
       search: searchTerm.trim() || undefined
     }
-    updateFilters(updatedFilters)
-    // Force refresh when search term changes
-    refreshCarousel(FIRST_PAGE, true)
-  }, [filters, searchTerm, updateFilters, refreshCarousel])
+    setFilters(newFilters)
+    fetchProjects(newFilters, 1, pagination.pageSize)
+  }
 
   // Sorting functionality
-  const handleSortChange = useCallback(
-    (field: string, order: 'asc' | 'desc') => {
-      const updatedFilters = {
-        ...filters,
-        sortBy: field || undefined,
-        sortOrder: order || undefined
-      }
-      updateFilters(updatedFilters)
-      // Force refresh when sorting changes
-      refreshCarousel(FIRST_PAGE, true)
-    },
-    [filters, updateFilters, refreshCarousel]
-  )
-
-  // Filter functionality
-  const handleFilterChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target
-      const updatedFilters = {
-        ...tempFilters,
-        [name]: value
-      } as Partial<ProjectFilters>
-      setTempFilters(updatedFilters)
-    },
-    [tempFilters]
-  )
-
-  const handleApplyFilters = useCallback(() => {
-    const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
-      if (value !== undefined && value !== '') {
-        const typedKey = key as keyof ProjectFilters
-
-        // Properly handle the sortOrder field which has a specific type
-        if (typedKey === 'sortOrder') {
-          // Only assign if it's a valid value
-          if (value === 'asc' || value === 'desc') {
-            acc[typedKey] = value as 'asc' | 'desc'
-          }
-        } else {
-          // For all other fields, assign the value directly
-          acc[typedKey] = value as string
-        }
-      }
-      return acc
-    }, {} as ProjectFilters)
-
-    // Preserve search term when applying other filters
-    if (filters.search) {
-      cleanedFilters.search = filters.search
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    const newFilters = {
+      ...storeFilters,
+      sortBy: field,
+      sortOrder: order
     }
+    setFilters(newFilters)
+    fetchProjects(newFilters, 1, pagination.pageSize)
+  }
 
-    // Preserve sorting when applying filters
-    if (filters.sortBy) {
-      cleanedFilters.sortBy = filters.sortBy
-      cleanedFilters.sortOrder = filters.sortOrder
-    }
-
-    updateFilters(cleanedFilters)
-    setFilterPopoverOpen(false)
-    // Force refresh when filters are applied
-    refreshCarousel(FIRST_PAGE, true)
-  }, [tempFilters, filters, updateFilters, refreshCarousel])
-
-  const resetFilters = useCallback(() => {
-    setTempFilters({})
+  // Reset filters
+  const resetFilters = () => {
     setSearchTerm('')
-    updateFilters({})
-    setFilterPopoverOpen(false)
-    // Force refresh when filters are reset
-    refreshCarousel(FIRST_PAGE, true)
-  }, [updateFilters, refreshCarousel])
+    setFilters({})
+    refreshProjects()
+  }
 
   // Project CRUD operations
-  const handleAddProject = useCallback(
-    async (project: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
-      try {
-        await addProject(project as Project)
-        setAddDialogOpen(false)
-        refreshCarousel()
-        toast.success('Project added successfully')
-      } catch (err) {
-        console.error('Error adding project:', err)
-        toast.error('Failed to add project')
-      }
-    },
-    [addProject, refreshCarousel]
-  )
+  const handleAddProject = async (
+    project: Omit<ProjectFormValues, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
+  ) => {
+    try {
+      await addProject(project as Project)
+      setAddDialogOpen(false)
+      toast.success('Project added successfully')
+    } catch (err) {
+      console.error('Error adding project:', err)
+      toast.error('Failed to add project')
+    }
+  }
 
-  const handleEditProject = useCallback(
-    async (project: Project) => {
-      try {
-        await updateProject(project)
-        setEditDialogOpen(false)
-        setSelectedProject(null)
-        refreshCarousel()
-        toast.success('Project updated successfully')
-      } catch (err) {
-        console.error('Error updating project:', err)
-        toast.error('Failed to update project')
-      }
-    },
-    [updateProject, refreshCarousel]
-  )
+  const handleEditProject = async (project: Project) => {
+    try {
+      await updateProject(project)
+      setEditDialogOpen(false)
+      setSelectedProject(null)
+      toast.success('Project updated successfully')
+    } catch (err) {
+      console.error('Error updating project:', err)
+      toast.error('Failed to update project')
+    }
+  }
 
-  const handleInitiateDelete = useCallback((project: Project) => {
+  const handleInitiateDelete = (project: Project) => {
     setProjectToDelete(project)
     setDeleteConfirmOpen(true)
-  }, [])
+  }
 
-  const handleConfirmDelete = useCallback(async () => {
+  const handleConfirmDelete = async () => {
     if (projectToDelete) {
       try {
         await deleteProject(projectToDelete.id)
-        refreshCarousel()
         toast.success('Project deleted successfully')
       } catch (err) {
         console.error('Error deleting project:', err)
@@ -248,67 +148,50 @@ export default function Projects() {
     }
     setDeleteConfirmOpen(false)
     setProjectToDelete(null)
-  }, [projectToDelete, deleteProject, refreshCarousel])
+  }
+
+  // Handle worker dialog close
+  const handleWorkerDialogChange = (open: boolean) => {
+    setWorkerDialogOpen(open)
+
+    // When the dialog closes, refresh the current project to update the workers list
+    if (!open) {
+      refreshCurrentProject()
+    }
+  }
 
   // Carousel management
-  const handleCarouselChange = useCallback(
-    (api: CarouselApi | null) => {
-      if (!api) return
+  const handleCarouselChange = (api: CarouselApi | null) => {
+    if (!api) return
 
-      const handleSelect = () => {
-        const selectedIndex = api.selectedScrollSnap()
-        if (projects[selectedIndex]) {
-          setCurrentProject(projects[selectedIndex])
-          setCurrentProjectId(projects[selectedIndex].id)
-        }
+    api.on('select', () => {
+      const selectedIndex = api.selectedScrollSnap()
+      if (projects[selectedIndex]) {
+        setCurrentProject(projects[selectedIndex])
       }
-
-      api.on('select', handleSelect)
-      return () => {
-        api.off('select', handleSelect)
-      }
-    },
-    [projects]
-  )
-
-  // Handler for worker management
-  const handleWorkerManagementClose = () => {
-    refreshCarousel()
-  }
-
-  // Handler for opening add project dialog
-  const handleOpenAddDialog = () => {
-    setAddDialogOpen(true)
-  }
-
-  // Handler for managing workers
-  const handleManageWorkers = () => {
-    setWorkerDialogOpen(true)
+    })
   }
 
   return (
     <>
       <PageTitle>Projects</PageTitle>
+
       {/* Search and Filter Toolbar */}
       <ProjectFiltersBar
         searchTerm={searchTerm}
-        filters={filters}
-        tempFilters={tempFilters}
-        filterPopoverOpen={filterPopoverOpen}
+        filters={storeFilters}
         loadingState={loadingState}
-        onSearchChange={handleSearchChange}
+        onSearchChange={setSearchTerm}
         onSearch={handleSearch}
-        onFilterChange={handleFilterChange}
-        onApplyFilters={handleApplyFilters}
         onResetFilters={resetFilters}
-        onFilterPopoverChange={setFilterPopoverOpen}
-        onAddProject={handleOpenAddDialog}
-        onManageWorkers={handleManageWorkers}
+        onAddProject={() => setAddDialogOpen(true)}
+        onManageWorkers={() => setWorkerDialogOpen(true)}
         currentProjectName={currentProject?.name}
         onSortChange={handleSortChange}
       />
+
+      {/* Project Carousel */}
       <div className='mx-auto my-4 max-w-screen-xl space-y-8'>
-        {/* Project Carousel */}
         <ProjectCarousel
           projects={projects}
           loadingState={loadingState}
@@ -321,19 +204,14 @@ export default function Projects() {
         />
       </div>
 
-      {/* Project Details (map and workers) - only show if there's a current project */}
+      {/* Project Details */}
       {currentProject && <ProjectDetails project={currentProject} />}
 
       {/* Worker Assignment Dialog */}
       <ProjectWorkersManagementDialog
         project={currentProject}
         open={workerDialogOpen}
-        onOpenChange={open => {
-          setWorkerDialogOpen(open)
-          if (!open) {
-            handleWorkerManagementClose()
-          }
-        }}
+        onOpenChange={handleWorkerDialogChange}
       />
 
       {/* Add Project Dialog */}
@@ -343,7 +221,7 @@ export default function Projects() {
             <DialogTitle>Add New Project</DialogTitle>
             <DialogDescription>Create a new project in the database.</DialogDescription>
           </DialogHeader>
-          <AddProjectForm onAddProject={project => handleAddProject(project as Project)} />
+          <AddProjectForm onAddProject={handleAddProject} />
         </DialogContent>
       </Dialog>
 
