@@ -47,7 +47,9 @@
     "tailwindcss": "^4.0.9",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "@rollup/rollup-linux-x64-gnu": "^4.9.2",
+    "@rollup/rollup-linux-arm64-musl": "^4.9.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

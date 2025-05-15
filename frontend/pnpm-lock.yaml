@@ -44,6 +44,12 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.8
         version: 1.1.8(@types/react-dom@19.0.4(@types/react@19.0.10))(@types/react@19.0.10)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@rollup/rollup-linux-arm64-musl':
+        specifier: ^4.9.2
+        version: 4.34.9
+      '@rollup/rollup-linux-x64-gnu':
+        specifier: ^4.9.2
+        version: 4.34.9
       '@tailwindcss/vite':
         specifier: ^4.0.9
         version: 4.0.9(vite@6.2.0(@types/node@22.13.8)(jiti@2.4.2)(lightningcss@1.29.1))
@@ -3816,8 +3822,7 @@ snapshots:
   '@rollup/rollup-linux-arm64-gnu@4.34.9':
     optional: true
 
-  '@rollup/rollup-linux-arm64-musl@4.34.9':
-    optional: true
+  '@rollup/rollup-linux-arm64-musl@4.34.9': {}
 
   '@rollup/rollup-linux-loongarch64-gnu@4.34.9':
     optional: true
@@ -3831,8 +3836,7 @@ snapshots:
   '@rollup/rollup-linux-s390x-gnu@4.34.9':
     optional: true
 
-  '@rollup/rollup-linux-x64-gnu@4.34.9':
-    optional: true
+  '@rollup/rollup-linux-x64-gnu@4.34.9': {}
 
   '@rollup/rollup-linux-x64-musl@4.34.9':
     optional: true
