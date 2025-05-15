@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { Worker } from '@/services/types'
-import { useWorkersStore } from '@/store/workers-store'
+import { Worker } from '@/api/model/worker'
+import { useWorkersStore } from '@/api/store/workers-store'
 
 // Chart data types
 export interface WorkerChartData {

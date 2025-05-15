@@ -1,9 +1,9 @@
 import { create } from 'zustand'
-import { Worker, WorkerFilters } from '@/services/types'
+import { Worker, WorkerFilters } from '@/api/model/worker'
+import { workersService } from '@/api/services/workers.service'
 import { toast } from 'sonner'
-import { workersService } from '@/services/workers.service'
 
-// Enhanced loading state type
+// Loading state
 type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
 interface WorkersState {
@@ -20,6 +20,7 @@ interface WorkersState {
 
   // Actions
   fetchWorkers: (filters?: WorkerFilters, page?: number, pageSize?: number) => Promise<Worker[]>
+  refreshWorkers: () => Promise<Worker[]>
   setFilters: (filters: WorkerFilters) => void
   addWorker: (worker: Worker) => Promise<Worker>
   updateWorker: (worker: Worker) => Promise<Worker>
@@ -85,6 +86,11 @@ export const useWorkersStore = create<WorkersState>((set, get) => ({
       toast.error(`Error fetching workers: ${errorMessage}`)
       throw error
     }
+  },
+
+  refreshWorkers: async () => {
+    const { filters, pagination } = get()
+    return get().fetchWorkers(filters, pagination.page, pagination.pageSize)
   },
 
   addWorker: async (worker: Worker) => {

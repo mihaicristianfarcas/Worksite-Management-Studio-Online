@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { Project, ProjectFilters, Worker } from '@/services/types'
-import { projectsService } from '@/services/projects.service'
+import { Worker } from '@/api/model/worker'
+import { Project, ProjectFilters } from '@/api/model/project'
+import { projectsService } from '@/api/services/projects.service'
 
 interface ProjectsState {
   projects: Project[]

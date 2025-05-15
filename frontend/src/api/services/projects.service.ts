@@ -1,23 +1,15 @@
-import {
-  Project,
-  ProjectFilters,
-  PaginationParams,
-  PaginatedResponse,
-  Worker
-} from '@/services/types'
-import { authService } from '@/services/auth.service'
+import { authService } from './auth.service'
+import { Worker } from '@/api/model/worker'
+import { Project, ProjectFilters } from '@/api/model/project'
+import { PaginationParams, PaginatedResponse } from '@/api/model/pagination'
 
 // API base URL - make sure this matches backend
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
-/**
- * Projects API service
- * Handles all API communication for project-related functionality
- */
+// Projects API service
+// Handles all API communication for project-related functionality
 export const projectsService = {
-  /**
-   * Fetch all projects with optional filters and sorting
-   */
+  // Fetch all projects with optional filters and sorting
   async getAll(
     filters?: ProjectFilters,
     pagination?: PaginationParams
@@ -97,9 +89,7 @@ export const projectsService = {
     }
   },
 
-  /**
-   * Get a project by ID
-   */
+  // Get a project by ID
   async getById(id: number): Promise<Project> {
     const response = await fetch(`${API_URL}/projects/${id}`, {
       headers: {
@@ -117,9 +107,7 @@ export const projectsService = {
     return await response.json()
   },
 
-  /**
-   * Add a new project
-   */
+  // Add a new project
   async create(project: Omit<Project, 'id'>): Promise<Project> {
     const response = await fetch(`${API_URL}/projects`, {
       method: 'POST',
@@ -139,9 +127,7 @@ export const projectsService = {
     return await response.json()
   },
 
-  /**
-   * Update an existing project
-   */
+  // Update an existing project
   async update(id: number, project: Partial<Project>): Promise<Project> {
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'PUT',
@@ -161,9 +147,7 @@ export const projectsService = {
     return await response.json()
   },
 
-  /**
-   * Delete a project
-   */
+  // Delete a project
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'DELETE',
@@ -179,9 +163,7 @@ export const projectsService = {
     }
   },
 
-  /**
-   * Assign a worker to a project
-   */
+  // Assign a worker to a project
   async assignWorker(projectId: number, workerId: number): Promise<Project> {
     const response = await fetch(`${API_URL}/projects/${projectId}/workers`, {
       method: 'POST',
@@ -201,9 +183,7 @@ export const projectsService = {
     return await response.json()
   },
 
-  /**
-   * Unassign a worker from a project
-   */
+  // Unassign a worker from a project
   async unassignWorker(projectId: number, workerId: number): Promise<Project> {
     const response = await fetch(`${API_URL}/projects/${projectId}/workers/${workerId}`, {
       method: 'DELETE',
@@ -221,9 +201,7 @@ export const projectsService = {
     return this.getById(projectId)
   },
 
-  /**
-   * Get workers available for assignment to a project
-   */
+  // Get workers available for assignment to a project
   async getAvailableWorkers(
     projectId: number,
     pagination?: PaginationParams

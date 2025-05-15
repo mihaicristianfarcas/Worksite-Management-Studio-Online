@@ -1,17 +1,14 @@
-import { Worker, WorkerFilters, PaginationParams, PaginatedResponse } from '@/services/types'
-import { authService } from '@/services/auth.service'
+import { authService } from './auth.service'
+import { Worker, WorkerFilters } from '@/api/model/worker'
+import { PaginationParams, PaginatedResponse } from '@/api/model/pagination'
 
 // API base URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
-/**
- * Workers API service
- * Handles all API communication for worker-related functionality
- */
+// Workers API service
+// Handles all API communication for worker-related functionality
 export const workersService = {
-  /**
-   * Fetch all workers with optional filters and sorting
-   */
+  // Fetch all workers with optional filters and sorting
   async getAll(
     filters?: WorkerFilters,
     pagination?: PaginationParams
@@ -90,9 +87,7 @@ export const workersService = {
     }
   },
 
-  /**
-   * Get a worker by ID
-   */
+  // Get a worker by ID
   async getById(id: number): Promise<Worker> {
     const response = await fetch(`${API_URL}/workers/${id}`, {
       headers: {
@@ -110,9 +105,7 @@ export const workersService = {
     return await response.json()
   },
 
-  /**
-   * Add a new worker
-   */
+  // Add a new worker
   async create(worker: Omit<Worker, 'id'>): Promise<Worker> {
     const response = await fetch(`${API_URL}/workers`, {
       method: 'POST',
@@ -132,9 +125,7 @@ export const workersService = {
     return await response.json()
   },
 
-  /**
-   * Update an existing worker
-   */
+  // Update an existing worker
   async update(worker: Worker): Promise<Worker> {
     const response = await fetch(`${API_URL}/workers/${worker.id}`, {
       method: 'PUT',
@@ -154,9 +145,7 @@ export const workersService = {
     return await response.json()
   },
 
-  /**
-   * Delete a worker
-   */
+  // Delete a worker
   async delete(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/workers/${id}`, {
       method: 'DELETE',
@@ -172,9 +161,7 @@ export const workersService = {
     }
   },
 
-  /**
-   * Delete multiple workers
-   */
+  // Delete multiple workers
   async deleteMany(ids: number[]): Promise<void> {
     const response = await fetch(`${API_URL}/workers/batch`, {
       method: 'DELETE',

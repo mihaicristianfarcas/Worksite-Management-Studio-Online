@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Project, Worker } from '@/services/types'
+import { Project } from '@/api/model/project'
+import { Worker } from '@/api/model/worker'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -9,7 +10,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { projectsService } from '@/services/projects.service'
+import { projectsService } from '@/api/services/projects.service'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, Users, UserPlus, UserMinus, Loader2 } from 'lucide-react'
@@ -24,10 +25,8 @@ interface ProjectWorkersManagementDialogProps {
   onOpenChange?: (open: boolean) => void
 }
 
-/**
- * A dialog for managing workers assigned to a project
- * Allows assigning available workers and unassigning current workers
- */
+// A dialog for managing workers assigned to a project
+// Allows assigning available workers and unassigning current workers
 const ProjectWorkersManagementDialog = ({
   project,
   onWorkerAssigned,
@@ -35,13 +34,16 @@ const ProjectWorkersManagementDialog = ({
   open: controlledOpen,
   onOpenChange
 }: ProjectWorkersManagementDialogProps) => {
+  const FIRST_PAGE = 1
+  const PAGE_SIZE = 10
+
   // Local state
   const [internalOpen, setInternalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([])
   const [availableWorkersTotal, setAvailableWorkersTotal] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(FIRST_PAGE)
+  const [pageSize] = useState(PAGE_SIZE)
   const [localProject, setLocalProject] = useState<Project | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('assigned')
@@ -108,7 +110,7 @@ const ProjectWorkersManagementDialog = ({
 
   useEffect(() => {
     if (open && localProject?.id) {
-      loadAvailableWorkers(1) // Reset to first page when dialog opens
+      loadAvailableWorkers(FIRST_PAGE) // Reset to first page when dialog opens
     }
   }, [open, localProject?.id, loadAvailableWorkers])
 
@@ -183,7 +185,7 @@ const ProjectWorkersManagementDialog = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (open && localProject?.id) {
-        loadAvailableWorkers(1)
+        loadAvailableWorkers(FIRST_PAGE)
       }
     }, 300)
 

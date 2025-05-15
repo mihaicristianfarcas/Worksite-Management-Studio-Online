@@ -2,7 +2,8 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
-  useReactTable
+  useReactTable,
+  SortingState
 } from '@tanstack/react-table'
 
 // UI Components
@@ -22,79 +23,82 @@ import { WorkersTable } from '@/components/workers/workers-table'
 import { WorkersPagination } from '@/components/workers/workers-pagination'
 import { useWorkersColumns } from '@/components/workers/workers-columns'
 
-// Custom hooks
-import { useWorkersTable } from '@/hooks/use-workers-table'
-import { useEffect, useState } from 'react'
-import { Worker } from '@/services/types'
+// Replaced the hook import with direct store import
+import { useWorkersStore } from '@/api/store/workers-store'
+import { useCallback, useEffect, useState } from 'react'
+import { Worker, WorkerFilters } from '@/api/model/worker'
 
-interface WorkersDataTableProps {
+interface MainWorkersDataTableProps {
   // Optional props to customize the table
   initialWorkers?: Worker[]
   showFilters?: boolean
   showPagination?: boolean
   showActions?: boolean
   title?: string
+  initialFilters?: WorkerFilters
 }
 
-export function WorkersDataTable({
+export function MainWorkersDataTable({
   initialWorkers,
   showFilters = true,
   showPagination = true,
   showActions = true,
-  title
-}: WorkersDataTableProps) {
+  title,
+  initialFilters = {}
+}: MainWorkersDataTableProps) {
+  const FIRST_PAGE = 1
   const [mounted, setMounted] = useState(false)
 
-  // Get table state and handlers from custom hook
-  const tableHook = useWorkersTable()
-
+  // Get workers data from store
   const {
-    // Table state
     workers,
     loadingState,
     pagination,
+    fetchWorkers,
+    addWorker,
+    updateWorker,
+    deleteWorker,
+    deleteWorkers,
+    setFilters: setStoreFilters
+  } = useWorkersStore()
 
-    // Table UI state
-    sorting,
-    setSorting,
-    columnVisibility,
-    setColumnVisibility,
-    rowSelection,
-    setRowSelection,
-    globalFilter,
-    setGlobalFilter,
+  // Table UI state
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const [globalFilter, setGlobalFilter] = useState('')
 
-    // Filter state
-    filters,
-    tempFilters,
-    searchTerm,
+  // Filter state
+  const [filters, setFilters] = useState<WorkerFilters>(initialFilters)
+  const [tempFilters, setTempFilters] = useState<WorkerFilters>(initialFilters)
+  const [searchTerm, setSearchTerm] = useState('')
 
-    // UI state
-    addDialogOpen,
-    setAddDialogOpen,
-    selectedWorker,
-    setSelectedWorker,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
-    deleteMultipleConfirmOpen,
-    setDeleteMultipleConfirmOpen,
-    workerToDelete,
-    filterPopoverOpen,
-    setFilterPopoverOpen,
+  // UI state
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = useState(false)
+  const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null)
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false)
 
-    // Action handlers
-    handleDeleteWorker,
-    handleConfirmDelete,
-    handleDeleteMultiple,
-    handleAddWorker,
-    handleEditWorker,
-    handleSearchChange,
-    handleSearch,
-    handleFilterChange,
-    handleApplyFilters,
-    resetFilters,
-    refreshTable
-  } = tableHook
+  // Fetch workers on mount and when dependencies change
+  useEffect(() => {
+    fetchWorkers(filters, pagination.page, pagination.pageSize)
+  }, [fetchWorkers, filters, pagination.page, pagination.pageSize])
+
+  // Helper function to update filters
+  const updateFilters = useCallback(
+    (updatedFilters: WorkerFilters) => {
+      setFilters(updatedFilters)
+      setStoreFilters(updatedFilters)
+    },
+    [setStoreFilters]
+  )
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Get columns configuration
   const columns = useWorkersColumns({
@@ -103,10 +107,105 @@ export function WorkersDataTable({
     showActions
   })
 
-  // Set mounted state
-  useEffect(() => {
-    setMounted(true)
+  // Handler functions
+  function handleDeleteWorker(worker: Worker) {
+    setWorkerToDelete(worker)
+    setDeleteConfirmOpen(true)
+  }
+
+  const refreshTable = useCallback(
+    (page = pagination.page) => {
+      fetchWorkers(filters, page, pagination.pageSize)
+    },
+    [fetchWorkers, filters, pagination.page, pagination.pageSize]
+  )
+
+  const handleConfirmDelete = useCallback(() => {
+    if (workerToDelete) {
+      deleteWorker(workerToDelete.id)
+      refreshTable()
+    }
+    setDeleteConfirmOpen(false)
+  }, [deleteWorker, refreshTable, workerToDelete])
+
+  const handleDeleteMultiple = useCallback(
+    (selectedIds: number[]) => {
+      deleteWorkers(selectedIds)
+      setRowSelection({})
+      refreshTable(FIRST_PAGE)
+      setDeleteMultipleConfirmOpen(false)
+    },
+    [deleteWorkers, refreshTable]
+  )
+
+  const handleAddWorker = useCallback(
+    async (worker: Worker) => {
+      await addWorker(worker)
+      setAddDialogOpen(false)
+      refreshTable(FIRST_PAGE)
+    },
+    [addWorker, refreshTable]
+  )
+
+  const handleEditWorker = useCallback(
+    async (worker: Worker) => {
+      await updateWorker(worker)
+      setSelectedWorker(null)
+      refreshTable()
+    },
+    [updateWorker, refreshTable]
+  )
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value)
   }, [])
+
+  const handleSearch = useCallback(() => {
+    const updatedFilters = {
+      ...filters,
+      search: searchTerm.trim() || undefined
+    }
+    updateFilters(updatedFilters)
+    refreshTable(FIRST_PAGE)
+  }, [filters, searchTerm, updateFilters, refreshTable])
+
+  const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
+    setTempFilters(prev => {
+      // Create a new object to avoid mutating state
+      const result = { ...prev } as WorkerFilters
+
+      if (value === '') {
+        delete result[name as keyof WorkerFilters]
+      } else {
+        // For numeric fields, convert to numbers
+        if (name.includes('Age') || name.includes('Salary')) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(result as any)[name] = Number(value)
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(result as any)[name] = value
+        }
+      }
+
+      return result
+    })
+  }, [])
+
+  const handleApplyFilters = useCallback(() => {
+    updateFilters(tempFilters)
+    setFilterPopoverOpen(false)
+    refreshTable(FIRST_PAGE)
+  }, [tempFilters, updateFilters, refreshTable])
+
+  const resetFilters = useCallback(() => {
+    setTempFilters({})
+    setSearchTerm('')
+    updateFilters({})
+    setFilterPopoverOpen(false)
+    refreshTable(FIRST_PAGE)
+  }, [updateFilters, refreshTable])
 
   // Create table instance
   const table = useReactTable({
@@ -147,7 +246,7 @@ export function WorkersDataTable({
     setGlobalFilter('')
     setSorting([])
     setColumnVisibility({})
-    refreshTable(1) // Reset to first page
+    refreshTable(FIRST_PAGE) // Reset to first page
   }
 
   // Handler for deleting multiple workers

@@ -1,47 +1,15 @@
-import { User } from '@/services/types'
 import { authService } from './auth.service'
+import { UserActivityResponse, PaginatedUsersResponse } from '@/api/model/admin'
 
 // API base URL
 const API_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/admin`
   : 'http://localhost:8080/api/admin'
 
-// Activity log type aligned with backend
-export type ActivityLog = {
-  id: number
-  user_id: number
-  username: string
-  log_type: string
-  entity_type: string
-  entity_id?: number
-  description: string
-  created_at: string
-}
-
-// Admin service types
-export type PaginatedUsersResponse = {
-  data: User[]
-  total: number
-  page: number
-  pageSize: number
-}
-
-export type UserActivityResponse = {
-  user: User
-  activity: ActivityLog[]
-  total: number
-  page: number
-  pageSize: number
-}
-
-/**
- * Admin service
- * Handles admin-specific operations
- */
+// Admin service
+// Handles admin-specific operations
 export const adminService = {
-  /**
-   * Get all users with pagination and search
-   */
+  // Get all users with pagination and search
   async getUsers(page = 1, pageSize = 20, search = ''): Promise<PaginatedUsersResponse> {
     const queryParams = new URLSearchParams({
       page: page.toString(),
@@ -68,9 +36,7 @@ export const adminService = {
     return await response.json()
   },
 
-  /**
-   * Update user status (activate/deactivate)
-   */
+  // Update user status (activate/deactivate)
   async updateUserStatus(userId: number, active: boolean): Promise<void> {
     const response = await fetch(`${API_URL}/users/${userId}/status`, {
       method: 'PUT',
@@ -87,9 +53,7 @@ export const adminService = {
     }
   },
 
-  /**
-   * Update user role
-   */
+  // Update user role
   async updateUserRole(userId: number, role: string): Promise<void> {
     const response = await fetch(`${API_URL}/users/${userId}/role`, {
       method: 'PUT',
@@ -106,9 +70,7 @@ export const adminService = {
     }
   },
 
-  /**
-   * Get user activity with pagination
-   */
+  // Get user activity with pagination
   async getUserActivity(userId: number, page = 1, pageSize = 10): Promise<UserActivityResponse> {
     const queryParams = new URLSearchParams({
       page: page.toString(),

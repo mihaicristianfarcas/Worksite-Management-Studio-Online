@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User } from '@/services/types'
-import { authService, LoginRequest, RegisterRequest } from '@/services/auth.service'
+import { User } from '@/api/model/user'
+import { authService } from '@/api/services/auth.service'
 import { toast } from 'sonner'
+import { LoginRequest, RegisterRequest } from '@/api/model/auth'
 
 // Define the auth context type
 type AuthContextType = {

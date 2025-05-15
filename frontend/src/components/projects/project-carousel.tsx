@@ -1,4 +1,4 @@
-import { Project } from '@/services/types'
+import { Project } from '@/api/model/project'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Carousel,
@@ -21,9 +21,7 @@ interface ProjectCarouselProps {
   carouselApiCallback: (api: CarouselApi | null) => void
 }
 
-/**
- * Carousel component that displays project cards and handles navigation
- */
+// Carousel component that displays project cards and handles navigation
 const ProjectCarousel = ({
   projects,
   loadingState,

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
-import { Worker } from '@/services/types'
+import { Worker } from '@/api/model/worker'
 
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
@@ -33,12 +33,7 @@ export default function EditWorkerForm({
   })
 
   const onSubmit: SubmitHandler<WorkerFormInputs> = async data => {
-    const updatedWorker = {
-      ...worker,
-      ...data
-    }
-
-    onEditWorker(updatedWorker)
+    await onEditWorker({ ...data, id: worker.id, user_id: worker.user_id })
     reset()
   }
 

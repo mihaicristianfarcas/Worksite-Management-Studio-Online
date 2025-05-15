@@ -1,28 +1,24 @@
-import { Worker } from '@/api/model/worker'
+import { User } from '@/api/model/user'
 import { Button } from '@/components/ui/button'
 
-interface WorkersPaginationProps {
+interface AdminPaginationProps {
   page: number
   pageSize: number
   total: number
-  selectedCount: number
   onPageChange: (page: number) => void
-  workers: Worker[] | undefined
+  users: User[] | undefined
 }
 
-export function WorkersPagination({
+export function AdminPagination({
   page,
   pageSize,
   total,
-  selectedCount,
   onPageChange,
-  workers = []
-}: WorkersPaginationProps) {
+  users = []
+}: AdminPaginationProps) {
   return (
     <div className='flex items-center justify-end space-x-2 py-4'>
-      <div className='text-muted-foreground flex-1 text-sm'>
-        {selectedCount} of {total} row(s) selected.
-      </div>
+      <div className='text-muted-foreground flex-1 text-sm'>Total: {total} user(s)</div>
       <div className='flex items-center space-x-2'>
         <Button
           variant='outline'
@@ -46,7 +42,7 @@ export function WorkersPagination({
           Next
         </Button>
         <span className='text-muted-foreground ml-2 text-sm'>
-          {total === 0 ? 'No workers found' : `Showing ${workers.length} of ${total} workers`}
+          {total === 0 ? 'No users found' : `Showing ${users.length} of ${total} users`}
         </span>
       </div>
     </div>

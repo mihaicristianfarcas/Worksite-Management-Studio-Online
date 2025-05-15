@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-import { Worker, WorkerFilters } from '@/services/types'
+import { Worker, WorkerFilters } from '@/api/model/worker'
 import AddWorkerForm from '@/components/workers/worker-add-form'
 import { Column } from '@tanstack/react-table'
 

@@ -1,4 +1,4 @@
-import { Project } from '@/services/types'
+import { Project } from '@/api/model/project'
 import {
   Table,
   TableBody,
@@ -8,11 +8,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 
-interface ProjectWorkersTableProps {
-  project: Project
-}
-
-const ProjectWorkersTable = ({ project }: ProjectWorkersTableProps) => {
+const AssignedWorkersTable = ({ project }: { project: Project }) => {
   return (
     <div className='space-y-4 rounded-md border'>
       <Table>
@@ -42,4 +38,4 @@ const ProjectWorkersTable = ({ project }: ProjectWorkersTableProps) => {
   )
 }
 
-export default ProjectWorkersTable
+export default AssignedWorkersTable

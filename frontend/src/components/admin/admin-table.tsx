@@ -1,5 +1,5 @@
 import { flexRender, Table as TableInstance, ColumnDef } from '@tanstack/react-table'
-import { Worker } from '@/api/model/worker'
+import { User } from '@/api/model/user'
 
 import {
   Table,
@@ -10,12 +10,13 @@ import {
   TableRow
 } from '@/components/ui/table'
 
-interface WorkersTableProps {
-  table: TableInstance<Worker>
-  columns: ColumnDef<Worker>[]
+interface AdminTableProps {
+  table: TableInstance<User>
+  columns: ColumnDef<User>[]
+  isLoading: boolean
 }
 
-export function WorkersTable({ table, columns }: WorkersTableProps) {
+export function AdminTable({ table, columns, isLoading }: AdminTableProps) {
   return (
     <div className='rounded-md border'>
       <Table>
@@ -26,7 +27,7 @@ export function WorkersTable({ table, columns }: WorkersTableProps) {
                 <TableHead
                   key={header.id}
                   className='text-center'
-                  style={{ width: `${header.column.getSize()}px` }}
+                  style={{ width: header.column.getSize ? `${header.column.getSize()}px` : 'auto' }}
                 >
                   {header.isPlaceholder
                     ? null
@@ -37,11 +38,24 @@ export function WorkersTable({ table, columns }: WorkersTableProps) {
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows?.length ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className='h-24 text-center'>
+                Loading users...
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map(row => (
-              <TableRow key={row.id} className='hover:bg-muted/30'>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() ? 'selected' : undefined}
+                className='hover:bg-muted/30'
+              >
                 {row.getVisibleCells().map(cell => (
-                  <TableCell key={cell.id} style={{ width: `${cell.column.getSize()}px` }}>
+                  <TableCell
+                    key={cell.id}
+                    style={{ width: cell.column.getSize ? `${cell.column.getSize()}px` : 'auto' }}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -50,7 +64,7 @@ export function WorkersTable({ table, columns }: WorkersTableProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className='h-24 text-center'>
-                No results found.
+                No users found
               </TableCell>
             </TableRow>
           )}

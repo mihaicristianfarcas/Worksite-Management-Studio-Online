@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Project } from '@/services/types'
+import { Project } from '@/api/model/project'
 import { useState } from 'react'
 import { format } from 'date-fns'
 

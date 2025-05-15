@@ -1,40 +1,17 @@
-import { User } from '@/services/types'
+import { User } from '@/api/model/user'
+import { LoginRequest, RegisterRequest, AuthResponse } from '@/api/model/auth'
 
 // API base URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-
-// Define login request type
-export type LoginRequest = {
-  username: string
-  password: string
-}
-
-// Define register request type
-export type RegisterRequest = {
-  username: string
-  email: string
-  password: string
-  role?: string
-}
-
-// Define auth response type
-export type AuthResponse = {
-  token: string
-  user: User
-}
 
 // Local storage keys
 const TOKEN_KEY = 'auth_token'
 const USER_KEY = 'auth_user'
 
-/**
- * Authentication service
- * Handles login, registration, and token management
- */
+// Authentication service
+// Handles login, registration, and token management
 export const authService = {
-  /**
-   * Login user with username and password
-   */
+  // Login user with username and password
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -58,9 +35,7 @@ export const authService = {
     return data
   },
 
-  /**
-   * Register a new user
-   */
+  // Register a new user
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -84,16 +59,12 @@ export const authService = {
     return data
   },
 
-  /**
-   * Get the current authentication token
-   */
+  // Get the current authentication token
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY)
   },
 
-  /**
-   * Get the current authenticated user
-   */
+  // Get the current authenticated user
   getUser(): User | null {
     const userJson = localStorage.getItem(USER_KEY)
     if (!userJson) return null
@@ -107,24 +78,18 @@ export const authService = {
     }
   },
 
-  /**
-   * Check if user is authenticated
-   */
+  // Check if user is authenticated
   isAuthenticated(): boolean {
     return !!this.getToken()
   },
 
-  /**
-   * Logout the current user
-   */
+  // Logout the current user
   logout(): void {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
   },
 
-  /**
-   * Get authentication headers for API requests
-   */
+  // Get authentication headers for API requests
   getAuthHeaders(): HeadersInit {
     const token = this.getToken()
     return token ? { Authorization: `Bearer ${token}` } : {}

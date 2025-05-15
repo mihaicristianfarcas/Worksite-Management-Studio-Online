@@ -28,7 +28,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useAuth } from '@/contexts/auth-context'
 import { Avatar, AvatarFallback } from './ui/avatar'
 
-// Menu mainItems.
+// Main menu items
 const mainPages = [
   {
     title: 'Dashboard',

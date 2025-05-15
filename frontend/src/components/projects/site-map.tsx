@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Icon } from 'leaflet'
 import { useEffect } from 'react'
-import { Project } from '@/services/types'
+import { Project } from '@/api/model/project'
 
 interface ProjectMapProps {
   project: Project

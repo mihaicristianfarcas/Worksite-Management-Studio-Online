@@ -1,12 +1,7 @@
 import { z } from 'zod'
 
-// id: 'fafwe9f9',
-// name: 'Sica',
-// age: 17,
-// position: 'Cu roaba',
-// salary: 1000
-
 export const WorkerSchema = z.object({
+  id: z.coerce.number().optional(),
   name: z
     .string()
     .min(2, { message: 'Name must be at least 2 characters.' })

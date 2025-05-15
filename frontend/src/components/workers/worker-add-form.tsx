@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
-import { Worker } from '@/services/types'
+import { Worker } from '@/api/model/worker'
 type WorkerFormInputs = z.infer<typeof WorkerSchema>
 
 interface AddWorkerFormProps {

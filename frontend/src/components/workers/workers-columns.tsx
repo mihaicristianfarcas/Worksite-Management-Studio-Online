@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { ColumnDef, Row } from '@tanstack/react-table'
+import { ColumnDef, Row, Table } from '@tanstack/react-table'
 import { ArrowUpDown, MoreHorizontal } from 'lucide-react'
-import { Worker } from '@/services/types'
+import { Worker } from '@/api/model/worker'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -30,7 +30,7 @@ export function useWorkersColumns({
         ? [
             {
               id: 'select',
-              header: ({ table }: { table: any }) => (
+              header: ({ table }: { table: Table<Worker> }) => (
                 <Checkbox
                   checked={
                     table.getIsAllPageRowsSelected() ||
@@ -41,7 +41,7 @@ export function useWorkersColumns({
                   className='mx-auto'
                 />
               ),
-              cell: ({ row }: { row: any }) => (
+              cell: ({ row }: { row: Row<Worker> }) => (
                 <Checkbox
                   checked={row.getIsSelected()}
                   onCheckedChange={value => row.toggleSelected(!!value)}
@@ -127,29 +127,34 @@ export function useWorkersColumns({
         ? [
             {
               id: 'actions',
+              header: () => <div className='text-center'>Actions</div>,
               cell: ({ row }: { row: Row<Worker> }) => {
                 const worker = row.original
 
                 return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant='ghost' className='h-8 w-8 p-0'>
-                        <span className='sr-only'>Open menu</span>
-                        <MoreHorizontal className='h-4 w-4' />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end'>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onEditWorker(worker)}>Edit</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className='text-destructive'
-                        onClick={() => onDeleteWorker(worker)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className='text-center'>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant='ghost' className='h-8 w-8 p-0'>
+                          <span className='sr-only'>Open menu</span>
+                          <MoreHorizontal className='h-4 w-4' />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align='end'>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => onEditWorker(worker)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className='text-destructive'
+                          onClick={() => onDeleteWorker(worker)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )
               },
               size: 50

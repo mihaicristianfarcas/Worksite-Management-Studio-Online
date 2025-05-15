@@ -104,3 +104,6 @@ next-env.d.ts
 .temp
 .cache/
 .turbo
+
+# Cursor
+.cursorignore

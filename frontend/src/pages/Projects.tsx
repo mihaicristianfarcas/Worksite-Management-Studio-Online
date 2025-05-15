@@ -1,7 +1,7 @@
 import PageTitle from '@/components/page-title'
 import AddProjectForm from '@/components/projects/project-add-form'
 import EditProjectForm from '@/components/projects/project-edit-form'
-import ProjectWorkersManagementDialog from '@/components/projects/project-workers-management-dialog'
+import ProjectWorkersManagementDialog from '@/components/projects/management-dialog'
 import {
   Dialog,
   DialogContent,
@@ -10,55 +10,266 @@ import {
   DialogDescription
 } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { useProjectsManagement } from '@/hooks/use-projects-management'
 import ProjectCarousel from '@/components/projects/project-carousel'
 import ProjectDetails from '@/components/projects/project-details'
 import ProjectFiltersBar from '@/components/projects/project-filters'
-import { Project } from '@/services/types'
+import { Project, ProjectFilters } from '@/api/model/project'
+import { useState, useCallback, useEffect } from 'react'
+import { useProjectsStore } from '@/api/store/projects-store'
+import { toast } from 'sonner'
+import { type CarouselApi } from '@/components/ui/carousel'
 
 export default function Projects() {
+  const FIRST_PAGE = 1
+
+  // Store state
   const {
-    // State
     projects,
+    pagination,
     loadingState,
-    currentProject,
-    searchTerm,
-    filters,
-    tempFilters,
-    filterPopoverOpen,
-    addDialogOpen,
-    editDialogOpen,
-    selectedProject,
-    projectToDelete,
-    deleteConfirmOpen,
-    workerDialogOpen,
+    fetchProjects,
+    setFilters: setStoreFilters,
+    addProject,
+    updateProject,
+    deleteProject
+  } = useProjectsStore()
 
-    // State setters
-    setFilterPopoverOpen,
-    setAddDialogOpen,
-    setEditDialogOpen,
-    setSelectedProject,
-    setDeleteConfirmOpen,
-    setWorkerDialogOpen,
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filters, setLocalFilters] = useState<ProjectFilters>({})
+  const [tempFilters, setTempFilters] = useState<ProjectFilters>({})
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false)
 
-    // Filter handlers
-    handleSearchChange,
-    handleSearch,
-    handleFilterChange,
-    handleApplyFilters,
-    resetFilters,
-    handleSortChange,
+  // Dialog states
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [workerDialogOpen, setWorkerDialogOpen] = useState(false)
 
-    // CRUD operations
-    handleAddProject,
-    handleEditProject,
-    handleInitiateDelete,
-    handleConfirmDelete,
+  // Carousel state
+  const [currentProject, setCurrentProject] = useState<Project | null>(null)
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null)
 
-    // Carousel
-    refreshCarousel,
-    handleCarouselChange
-  } = useProjectsManagement()
+  // Load projects when filters or pagination changes
+  useEffect(() => {
+    fetchProjects(filters, pagination.page, pagination.pageSize)
+  }, [fetchProjects, filters, pagination.page, pagination.pageSize])
+
+  // Set initial current project when projects load
+  useEffect(() => {
+    if (projects.length > 0) {
+      if (currentProjectId) {
+        // Try to find the previously selected project
+        const previousProject = projects.find(p => p.id === currentProjectId)
+        if (previousProject) {
+          setCurrentProject(previousProject)
+        } else {
+          // If previous project not found, default to first project
+          setCurrentProject(projects[0])
+          setCurrentProjectId(projects[0].id)
+        }
+      } else if (!currentProject) {
+        // Initial load - set first project
+        setCurrentProject(projects[0])
+        setCurrentProjectId(projects[0].id)
+      }
+    }
+  }, [projects, currentProjectId, currentProject])
+
+  // Helper functions for filters
+  const updateFilters = useCallback(
+    (updatedFilters: ProjectFilters) => {
+      setLocalFilters(updatedFilters)
+      setStoreFilters(updatedFilters)
+    },
+    [setStoreFilters]
+  )
+
+  // Optimized refresh function that preserves the current project
+  const refreshCarousel = useCallback(
+    (page = pagination.page, forceRefresh = false) => {
+      const projectIdToKeep = currentProjectId
+
+      // Always fetch from server when forceRefresh is true
+      if (forceRefresh) {
+        return fetchProjects(filters, page, pagination.pageSize).then(() => {
+          if (projectIdToKeep) {
+            setCurrentProjectId(projectIdToKeep)
+          }
+        })
+      }
+
+      return fetchProjects(filters, page, pagination.pageSize).then(() => {
+        if (projectIdToKeep) {
+          setCurrentProjectId(projectIdToKeep)
+        }
+      })
+    },
+    [fetchProjects, pagination.pageSize, currentProjectId, filters, pagination.page]
+  )
+
+  // Search functionality
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value)
+  }, [])
+
+  const handleSearch = useCallback(() => {
+    const updatedFilters = {
+      ...filters,
+      search: searchTerm.trim() || undefined
+    }
+    updateFilters(updatedFilters)
+    // Force refresh when search term changes
+    refreshCarousel(FIRST_PAGE, true)
+  }, [filters, searchTerm, updateFilters, refreshCarousel])
+
+  // Sorting functionality
+  const handleSortChange = useCallback(
+    (field: string, order: 'asc' | 'desc') => {
+      const updatedFilters = {
+        ...filters,
+        sortBy: field || undefined,
+        sortOrder: order || undefined
+      }
+      updateFilters(updatedFilters)
+      // Force refresh when sorting changes
+      refreshCarousel(FIRST_PAGE, true)
+    },
+    [filters, updateFilters, refreshCarousel]
+  )
+
+  // Filter functionality
+  const handleFilterChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target
+      const updatedFilters = {
+        ...tempFilters,
+        [name]: value
+      } as Partial<ProjectFilters>
+      setTempFilters(updatedFilters)
+    },
+    [tempFilters]
+  )
+
+  const handleApplyFilters = useCallback(() => {
+    const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== '') {
+        const typedKey = key as keyof ProjectFilters
+
+        // Properly handle the sortOrder field which has a specific type
+        if (typedKey === 'sortOrder') {
+          // Only assign if it's a valid value
+          if (value === 'asc' || value === 'desc') {
+            acc[typedKey] = value as 'asc' | 'desc'
+          }
+        } else {
+          // For all other fields, assign the value directly
+          acc[typedKey] = value as string
+        }
+      }
+      return acc
+    }, {} as ProjectFilters)
+
+    // Preserve search term when applying other filters
+    if (filters.search) {
+      cleanedFilters.search = filters.search
+    }
+
+    // Preserve sorting when applying filters
+    if (filters.sortBy) {
+      cleanedFilters.sortBy = filters.sortBy
+      cleanedFilters.sortOrder = filters.sortOrder
+    }
+
+    updateFilters(cleanedFilters)
+    setFilterPopoverOpen(false)
+    // Force refresh when filters are applied
+    refreshCarousel(FIRST_PAGE, true)
+  }, [tempFilters, filters, updateFilters, refreshCarousel])
+
+  const resetFilters = useCallback(() => {
+    setTempFilters({})
+    setSearchTerm('')
+    updateFilters({})
+    setFilterPopoverOpen(false)
+    // Force refresh when filters are reset
+    refreshCarousel(FIRST_PAGE, true)
+  }, [updateFilters, refreshCarousel])
+
+  // Project CRUD operations
+  const handleAddProject = useCallback(
+    async (project: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+      try {
+        await addProject(project as Project)
+        setAddDialogOpen(false)
+        refreshCarousel()
+        toast.success('Project added successfully')
+      } catch (err) {
+        console.error('Error adding project:', err)
+        toast.error('Failed to add project')
+      }
+    },
+    [addProject, refreshCarousel]
+  )
+
+  const handleEditProject = useCallback(
+    async (project: Project) => {
+      try {
+        await updateProject(project)
+        setEditDialogOpen(false)
+        setSelectedProject(null)
+        refreshCarousel()
+        toast.success('Project updated successfully')
+      } catch (err) {
+        console.error('Error updating project:', err)
+        toast.error('Failed to update project')
+      }
+    },
+    [updateProject, refreshCarousel]
+  )
+
+  const handleInitiateDelete = useCallback((project: Project) => {
+    setProjectToDelete(project)
+    setDeleteConfirmOpen(true)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (projectToDelete) {
+      try {
+        await deleteProject(projectToDelete.id)
+        refreshCarousel()
+        toast.success('Project deleted successfully')
+      } catch (err) {
+        console.error('Error deleting project:', err)
+        toast.error('Failed to delete project')
+      }
+    }
+    setDeleteConfirmOpen(false)
+    setProjectToDelete(null)
+  }, [projectToDelete, deleteProject, refreshCarousel])
+
+  // Carousel management
+  const handleCarouselChange = useCallback(
+    (api: CarouselApi | null) => {
+      if (!api) return
+
+      const handleSelect = () => {
+        const selectedIndex = api.selectedScrollSnap()
+        if (projects[selectedIndex]) {
+          setCurrentProject(projects[selectedIndex])
+          setCurrentProjectId(projects[selectedIndex].id)
+        }
+      }
+
+      api.on('select', handleSelect)
+      return () => {
+        api.off('select', handleSelect)
+      }
+    },
+    [projects]
+  )
 
   // Handler for worker management
   const handleWorkerManagementClose = () => {
