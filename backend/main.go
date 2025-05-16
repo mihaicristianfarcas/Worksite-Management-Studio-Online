@@ -95,22 +95,19 @@ func main() {
 	admin.PUT("/users/:id/role", adminCtrl.UpdateUserRole)
 	admin.GET("/users/:id/activity", adminCtrl.GetUserActivity)
 
+	// Health check endpoint
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "healthy",
+			"message": "Service is up and running",
+		})
+	})
+
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
-	// Check if TLS is enabled
-	// tlsEnabled := os.Getenv("TLS_ENABLED") == "true"
-	// certFile := os.Getenv("TLS_CERT_FILE")
-	// keyFile := os.Getenv("TLS_KEY_FILE")
-
-	// if tlsEnabled && certFile != "" && keyFile != "" {
-	// 	e.Logger.Fatal(e.StartTLS(":"+port, certFile, keyFile))
-	// } else {
-	// 	e.Logger.Fatal(e.Start(":"+port))
-	// }
 
 	e.Logger.Fatal(e.Start(":"+port))
 
