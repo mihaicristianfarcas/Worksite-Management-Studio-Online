@@ -1,37 +1,51 @@
-import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react'
 import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig, loadEnv } from 'vite'
 
-// https://vitejs.dev/config/
+// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load environment variables for the current mode (development | production)
-  const env = loadEnv(mode, process.cwd())
+  // Load env file based on `mode` in the current directory
+  const env = loadEnv(mode, process.cwd(), '')
 
-  // Set the API URL to the backend URL hardcoded because it does not read?
+  // Set the API URL to the backend URL hardcoded
   env.VITE_API_URL = 'https://backend-c9ng.onrender.com/api'
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src')
       }
     },
-    server: {
-      port: 5173,
-      cors: true
-    },
+    // Base public path when served in production
+    base: '/',
+    // Build configuration
     build: {
+      // Output directory for production build
       outDir: 'dist',
-      sourcemap: mode !== 'production',
+      // Minify for production
       minify: 'terser',
+      // Add source maps for debugging
+      sourcemap: mode !== 'production',
+      // Enable/disable CSS code splitting
       cssCodeSplit: true,
-      chunkSizeWarningLimit: 1000,
+      // Terser options
       terserOptions: {
         compress: {
+          // Remove console.log in production
           drop_console: mode === 'production'
         }
-      }
+      },
+      // Chunk size warning limit
+      chunkSizeWarningLimit: 1000
+    },
+    // Server configuration
+    server: {
+      // Configure CORS for development server
+      cors: true,
+      // Set port
+      port: 5173
     }
   }
 })
