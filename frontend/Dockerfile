@@ -28,11 +28,14 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add a non-root user and set permissions in a single layer
+# Add a non-root user
 RUN adduser -D -g '' appuser && \
-    chown -R appuser:appuser /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
+    chown -R appuser:appuser /usr/share/nginx/html && \
+    chown -R appuser:appuser /var/cache/nginx && \
+    chown -R appuser:appuser /var/log/nginx && \
+    chown -R appuser:appuser /etc/nginx/conf.d && \
     touch /var/run/nginx.pid && \
-    chown appuser:appuser /var/run/nginx.pid
+    chown -R appuser:appuser /var/run/nginx.pid
 
 # Switch to non-root user
 USER appuser
