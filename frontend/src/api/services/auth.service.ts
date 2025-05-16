@@ -2,7 +2,7 @@ import { User } from '@/api/model/user'
 import { LoginRequest, RegisterRequest, AuthResponse } from '@/api/model/auth'
 
 // API base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const API_URL = 'https://backend-c9ng.onrender.com/api'
 
 // Local storage keys
 const TOKEN_KEY = 'auth_token'

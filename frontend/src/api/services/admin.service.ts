@@ -2,9 +2,7 @@ import { authService } from './auth.service'
 import { UserActivityResponse, PaginatedUsersResponse } from '@/api/model/admin'
 
 // API base URL
-const API_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/admin`
-  : 'http://localhost:8080/api/admin'
+const API_URL = 'https://backend-c9ng.onrender.com/api/admin'
 
 // Admin service
 // Handles admin-specific operations

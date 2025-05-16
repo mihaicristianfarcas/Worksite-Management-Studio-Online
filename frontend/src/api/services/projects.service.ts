@@ -4,7 +4,7 @@ import { Project, ProjectFilters } from '@/api/model/project'
 import { PaginationParams, PaginatedResponse } from '@/api/model/pagination'
 
 // API base URL - make sure this matches backend
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const API_URL = 'https://backend-c9ng.onrender.com/api'
 
 // Projects API service
 // Handles all API communication for project-related functionality

@@ -3,7 +3,7 @@ import { Worker, WorkerFilters } from '@/api/model/worker'
 import { PaginationParams, PaginatedResponse } from '@/api/model/pagination'
 
 // API base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const API_URL = 'https://backend-c9ng.onrender.com/api'
 
 // Workers API service
 // Handles all API communication for worker-related functionality
